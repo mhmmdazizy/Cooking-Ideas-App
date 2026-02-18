@@ -5,7 +5,7 @@ const firebaseConfig = {
   projectId: "cookingideas-2a894",
   storageBucket: "cookingideas-2a894.firebasestorage.app",
   messagingSenderId: "376881959519",
-  appId: "1:376881959519:web:46f75e2c840654b1ba01ea"
+  appId: "1:376881959519:web:46f75e2c840654b1ba01ea",
 };
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -101,7 +101,7 @@ function renderGrid(containerId, data) {
   document.getElementById(containerId).innerHTML = data
     .map(
       (item) => `
-        <div class="card-item" onclick="alert('Detail: ${item.title}')">
+        <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}')">
             <img src="${item.img}" class="card-thumb" loading="lazy">
             <div class="card-info">
                 <span class="card-tag">${item.tag}</span>
@@ -170,6 +170,28 @@ window.toggleNotifSheet = () => {
   }
 };
 
+// --- ARTICLE DETAIL LOGIC ---
+window.openArticle = (title, tag, img) => {
+  document.getElementById("detail-title").innerText = title;
+  document.getElementById("detail-category").innerText = tag;
+  document.getElementById("detail-image").style.backgroundImage =
+    `url('${img}')`;
+
+  // Generate dummy content panjang biar scrollable
+  document.getElementById("detail-desc").innerHTML = `
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Masakan ini sangat cocok untuk keluarga.</p>
+        <p><b>Bahan-bahan:</b><br>Siapkan semua bahan yang segar agar rasa masakan lebih nikmat. Jangan lupa cuci bersih sayuran.</p>
+        <p><b>Cara Membuat:</b><br>1. Panaskan minyak.<br>2. Tumis bumbu hingga harum.<br>3. Masukkan bahan utama.<br>4. Sajikan hangat.</p>
+        <p>Nikmati selagi hangat bersama nasi putih.</p>
+    `;
+
+  document.getElementById("article-view").classList.add("active");
+};
+
+window.closeArticle = () => {
+  document.getElementById("article-view").classList.remove("active");
+};
+
 // Login Logic
 function updateUI(user) {
   // Icon Google
@@ -212,16 +234,85 @@ function updateUI(user) {
   }
 }
 
-// Popup Info
+// --- POPUP LOGIC (UPDATED) ---
 window.openPopup = (type) => {
+  let title = "";
   let content = "";
-  if (type === "bantuan")
-    content = "<h3>Bantuan</h3><p>Pilih bahan di Home, klik cari resep.</p>";
-  if (type === "tentang")
-    content = "<h3>Tentang</h3><p>Aplikasi Masak Apa v1.0</p>";
+  const popupBody = document.getElementById("popup-body");
 
-  document.getElementById("popup-body").innerHTML = content;
+  if (type === "bantuan") {
+    title = "Bantuan & FAQ";
+    content = `
+            <input type="text" placeholder="Cari pertanyaan..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px; font-size:14px;">
+            
+            <div class="faq-list">
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <div class="faq-question">Cara cari resep? <i data-feather="chevron-down"></i></div>
+                    <div class="faq-answer">Pilih bahan yang kamu punya di halaman Home, lalu klik tombol Cari Resep.</div>
+                </div>
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <div class="faq-question">Apakah gratis? <i data-feather="chevron-down"></i></div>
+                    <div class="faq-answer">Ya, aplikasi ini 100% gratis untuk digunakan siapa saja.</div>
+                </div>
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <div class="faq-question">Lupa password? <i data-feather="chevron-down"></i></div>
+                    <div class="faq-answer">Karena login menggunakan Google, silakan reset password akun Google Anda.</div>
+                </div>
+            </div>
+
+            <button class="find-btn" style="margin-top:20px; font-size:14px; padding:10px;">
+                <i data-feather="mail"></i> Hubungi Dukungan
+            </button>
+        `;
+  } else if (type === "privasi") {
+    title = "Kebijakan Privasi";
+    content = `
+            <div class="privacy-text">
+                <b>Pendahuluan</b><br>
+                Selamat datang di Aplikasi Masak Apa?. Kami menghargai privasi Anda...<br><br>
+                <b>Data yang Kami Kumpulkan</b><br>
+                Kami hanya menggunakan data Login Google (Nama & Foto) untuk personalisasi...<br><br>
+                <b>Penggunaan Data</b><br>
+                Data digunakan untuk menyimpan preferensi bahan dan resep favorit Anda secara lokal...<br><br>
+                <b>Hubungi Kami</b><br>
+                Jika ada pertanyaan, hubungi support@masakapa.com
+            </div>
+            <p style="font-size:10px; color:#888; text-align:right;">Terakhir diperbaharui: 19 Februari 2026</p>
+            <button class="find-btn" onclick="closePopup()">Saya Mengerti</button>
+        `;
+  } else if (type === "tentang") {
+    title = "Tentang Aplikasi";
+    content = `
+            <div style="text-align:center;">
+                <div class="about-logo">MA?</div>
+                <h4 style="margin:5px 0;">Masak Apa? v1.0.0</h4>
+                <p style="margin:0; font-size:12px; color:#888;">Update: 19 Februari 2026</p>
+            </div>
+            <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+            <div style="font-size:13px; text-align:left;">
+                <b>Apa yang baru di v1.0:</b>
+                <ul style="padding-left:20px; margin:5px 0; color:#555;">
+                    <li>Pencarian resep berdasarkan bahan</li>
+                    <li>Login Google integration</li>
+                    <li>Mode Gelap (Dark Mode)</li>
+                    <li>Tampilan baru yang fresh</li>
+                </ul>
+            </div>
+            <button class="find-btn" style="background:#f3f4f6; color:#333; margin-top:20px;" onclick="location.reload()">
+                <i data-feather="monitor"></i> Cek Pembaruan
+            </button>
+        `;
+  }
+
+  document.getElementById("popup-title").innerText = title;
+  popupBody.innerHTML = content;
   document.getElementById("info-popup").classList.add("active");
+  feather.replace(); // Render icon baru
+};
+
+// Fungsi Toggle Accordion FAQ
+window.toggleFaq = (element) => {
+  element.classList.toggle("active");
 };
 window.closePopup = () =>
   document.getElementById("info-popup").classList.remove("active");
@@ -233,4 +324,3 @@ window.toggleTheme = () => {
     document.body.removeAttribute("data-theme");
   else document.body.setAttribute("data-theme", "dark");
 };
-
