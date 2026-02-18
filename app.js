@@ -9,13 +9,13 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 
-// --- 2. LOGIC APLIKASI ---
-
-// Data Bahan & Resep (Tetap sama)
+// --- 2. DATA UTAMA ---
 const ingredients = [
   { id: "telur", name: "Telur", icon: "disc" },
   { id: "tempe", name: "Tempe", icon: "square" },
@@ -56,19 +56,18 @@ const recipes = [
 ];
 
 let selectedIngredients = new Set();
-let currentUser = null; // Menyimpan data user login
+let currentUser = null;
 
+// --- 3. LOGIKA APLIKASI ---
 document.addEventListener("DOMContentLoaded", () => {
   renderIngredients();
 
-  // Cek Status Login (Realtime)
+  // Cek Login Status
   auth.onAuthStateChanged((user) => {
     if (user) {
-      // User sedang login
       currentUser = user;
       updateUI_LoggedIn(user);
     } else {
-      // User logout
       currentUser = null;
       updateUI_LoggedOut();
     }
@@ -77,73 +76,169 @@ document.addEventListener("DOMContentLoaded", () => {
   feather.replace();
 });
 
-// --- FUNGSI LOGIN / LOGOUT (GOOGLE REAL) ---
+// --- Navigasi Halaman ---
+window.switchPage = (pageId) => {
+  // 1. Hide semua page
+  document
+    .querySelectorAll(".page")
+    .forEach((p) => p.classList.remove("active"));
+  // 2. Show target page
+  document.getElementById(pageId).classList.add("active");
 
-window.handleLogin = () => {
-  auth
-    .signInWithPopup(provider)
-    .then((result) => {
-      // Login sukses
-      toggleAccountMenu(); // Tutup menu
-      alert(`Selamat datang, ${result.user.displayName}!`);
-    })
-    .catch((error) => {
-      console.error(error);
-      alert("Login Gagal: " + error.message);
-    });
+  // 3. Update Bottom Nav Active State
+  document
+    .querySelectorAll(".nav-item")
+    .forEach((n) => n.classList.remove("active"));
+
+  // Highlight nav item yang sesuai
+  let navId = "";
+  if (pageId === "home") navId = "home";
+  else if (pageId === "explore") navId = "explore";
+  else if (pageId === "menu-page") navId = "menu-page";
+  else if (pageId === "favorit") navId = "favorit";
+  else if (pageId === "profile-page") {
+    navId = "profile-page";
+    document.getElementById("nav-profile").classList.add("active"); // Khusus profil
+  }
+
+  // Cari elemen nav yg href onclick-nya match (kecuali profil yg udah dihandle)
+  if (pageId !== "profile-page") {
+    const targetNav = Array.from(document.querySelectorAll(".nav-item")).find(
+      (el) => el.getAttribute("onclick").includes(pageId),
+    );
+    if (targetNav) targetNav.classList.add("active");
+  }
+
+  // 4. Atur Header (Sembunyikan header mini di halaman profil full)
+  const header = document.getElementById("main-header");
+  if (pageId === "profile-page") {
+    header.style.display = "none";
+  } else {
+    header.style.display = "block";
+  }
+
+  window.scrollTo(0, 0);
 };
 
-window.handleLogout = () => {
-  auth.signOut().then(() => {
-    alert("Berhasil Logout");
-    toggleAccountMenu();
-  });
-};
-
+// --- Update UI Profil ---
 function updateUI_LoggedIn(user) {
-  // Update Header
+  // Mini Header
   document.getElementById("header-username").innerText =
-    user.displayName.split(" ")[0]; // Nama depan aja
-
-  // Ganti Avatar dengan Foto Profil Google
+    user.displayName.split(" ")[0];
   const avatarEl = document.getElementById("header-avatar");
-  avatarEl.innerHTML = `<img src="${user.photoURL}" style="width:100%; height:100%; border-radius:50%;">`;
-  avatarEl.style.background = "transparent"; // Hapus background warna
+  avatarEl.innerHTML = `<img src="${user.photoURL}">`;
+  avatarEl.style.background = "transparent";
 
-  // Update Menu Drawer
-  const loginSec = document.getElementById("login-section");
-  loginSec.innerHTML = `
-        <div style="text-align:center; margin-bottom:20px;">
-            <img src="${user.photoURL}" style="width:60px; height:60px; border-radius:50%; margin-bottom:10px;">
-            <h3 style="margin:0; font-size:16px;">${user.displayName}</h3>
-            <p style="margin:0; font-size:12px; color:#666;">${user.email}</p>
-        </div>
-        <button onclick="handleLogout()" class="reset-btn" style="width:100%; background:#ffebee; color:#d32f2f;">
-            <i data-feather="log-out"></i> Keluar / Logout
+  // Halaman Profil Besar
+  document.getElementById("profile-name-large").innerText = user.displayName;
+  document.getElementById("profile-email-large").innerText = user.email;
+  document.getElementById("profile-avatar-large").innerHTML =
+    `<img src="${user.photoURL}">`;
+  document.getElementById("profile-avatar-large").style.background =
+    "transparent";
+
+  // Tombol Logout
+  document.getElementById("auth-btn-container").innerHTML = `
+        <button class="auth-btn btn-logout" onclick="handleLogout()">
+            <i data-feather="log-out"></i> Keluar
         </button>
     `;
   feather.replace();
 }
 
 function updateUI_LoggedOut() {
-  // Reset Header
+  // Mini Header
   document.getElementById("header-username").innerText = "Guest";
   document.getElementById("header-avatar").innerHTML = "G";
   document.getElementById("header-avatar").style.background = "var(--primary)";
 
-  // Reset Menu Drawer ke Tombol Login Google
-  const loginSec = document.getElementById("login-section");
-  loginSec.innerHTML = `
-        <p>Simpan preferensi dan resep favorit.</p>
-        <button class="google-btn" onclick="handleLogin()">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="G">
+  // Halaman Profil Besar
+  document.getElementById("profile-name-large").innerText = "Guest User";
+  document.getElementById("profile-email-large").innerText =
+    "Login untuk simpan data";
+  document.getElementById("profile-avatar-large").innerHTML = "G";
+  document.getElementById("profile-avatar-large").style.background =
+    "var(--primary)";
+
+  // Tombol Login
+  document.getElementById("auth-btn-container").innerHTML = `
+        <button class="auth-btn btn-login-google" onclick="handleLogin()">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="18">
             Masuk dengan Google
         </button>
     `;
 }
 
-// --- FUNGSI UTAMA LAINNYA (SAMA SEPERTI SEBELUMNYA) ---
+// --- Login & Logout ---
+window.handleLogin = () => {
+  auth
+    .signInWithPopup(provider)
+    .then((result) => {
+      alert(`Selamat datang, ${result.user.displayName}!`);
+    })
+    .catch((error) => alert("Login Gagal: " + error.message));
+};
 
+window.handleLogout = () => {
+  auth.signOut().then(() => alert("Berhasil Logout"));
+};
+
+// --- Popup Info & Bantuan ---
+const popupData = {
+  bantuan: {
+    title: "Bantuan & FAQ",
+    content: `
+            <h4>Cara pakai aplikasi?</h4>
+            <p>Cukup pilih bahan yang ada di kulkas kamu di halaman Home, lalu klik "Cari Resep".</p>
+            <h4>Apakah resepnya akurat?</h4>
+            <p>Resep disesuaikan dengan bahan minimal yang kamu punya.</p>
+        `,
+  },
+  privasi: {
+    title: "Kebijakan Privasi",
+    content: `
+            <p>Kami sangat menghargai privasi Anda. Data login Google hanya digunakan untuk menampilkan nama dan foto profil.</p>
+            <p>Kami tidak menyimpan data pribadi sensitif Anda di server kami.</p>
+        `,
+  },
+  tentang: {
+    title: "Tentang Aplikasi",
+    content: `
+            <p><b>Masak Apa? v1.0</b></p>
+            <p>Dibuat dengan ❤️ oleh Developer.</p>
+            <p>Aplikasi ini dibuat untuk membantu anak kos dan ibu rumah tangga memasak tanpa bingung.</p>
+        `,
+  },
+};
+
+window.openPopup = (type) => {
+  const data = popupData[type];
+  if (data) {
+    document.getElementById("popup-title").innerText = data.title;
+    document.getElementById("popup-body").innerHTML = data.content;
+
+    const popup = document.getElementById("info-popup");
+    popup.style.display = "flex";
+    // Force Reflow
+    popup.offsetHeight;
+    popup.classList.add("active");
+  }
+};
+
+window.closePopup = () => {
+  const popup = document.getElementById("info-popup");
+  popup.classList.remove("active");
+  setTimeout(() => {
+    popup.style.display = "none";
+  }, 300);
+};
+
+// Tutup popup kalau klik di luar area kartu
+document.getElementById("info-popup").addEventListener("click", (e) => {
+  if (e.target.id === "info-popup") closePopup();
+});
+
+// --- Fitur Lain (Sama) ---
 function renderIngredients() {
   const container = document.getElementById("ingredients-container");
   container.innerHTML = ingredients
@@ -160,9 +255,7 @@ function renderIngredients() {
 }
 
 window.toggleIngredient = (id, el) => {
-  // Efek getar dikit pas klik (Haptic Feedback)
   if (navigator.vibrate) navigator.vibrate(10);
-
   if (selectedIngredients.has(id)) {
     selectedIngredients.delete(id);
     el.classList.remove("selected");
@@ -182,13 +275,13 @@ window.findRecipes = () => {
 
   if (matched.length === 0) {
     resultsContainer.innerHTML =
-      '<p style="text-align:center; color:var(--text-muted); font-size:14px; padding:20px;">Belum ada resep yang pas nih. <br>Coba tambah bahan lain.</p>';
+      '<p style="text-align:center; color:var(--text-muted); padding:20px;">Bahan kurang lengkap.</p>';
   } else {
     resultsContainer.innerHTML = matched
       .map(
         (r) => `
             <div class="recipe-card">
-                <img src="${r.img}" class="recipe-img" alt="${r.name}">
+                <img src="${r.img}" class="recipe-img">
                 <div class="recipe-info">
                     <h3>${r.name}</h3>
                     <p>Bahan: ${r.req.join(", ")}</p>
@@ -199,33 +292,8 @@ window.findRecipes = () => {
       )
       .join("");
   }
-
   resultsSection.style.display = "block";
   resultsSection.scrollIntoView({ behavior: "smooth" });
-};
-
-window.switchPage = (pageId) => {
-  document
-    .querySelectorAll(".page")
-    .forEach((p) => p.classList.remove("active"));
-  document.getElementById(pageId).classList.add("active");
-
-  document
-    .querySelectorAll(".nav-item")
-    .forEach((n) => n.classList.remove("active"));
-  event.currentTarget.classList.add("active");
-};
-
-window.toggleAccountMenu = () => {
-  const overlay = document.getElementById("account-overlay");
-  if (overlay.classList.contains("visible")) {
-    overlay.classList.remove("visible");
-    setTimeout(() => (overlay.style.display = "none"), 300);
-  } else {
-    overlay.style.display = "flex";
-    overlay.offsetHeight;
-    overlay.classList.add("visible");
-  }
 };
 
 window.toggleTheme = () => {
@@ -242,5 +310,3 @@ window.resetData = () => {
     location.reload();
   }
 };
-
-

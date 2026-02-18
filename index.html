@@ -15,74 +15,20 @@
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   </head>
   <body>
     <header id="main-header">
-      <div class="profile-pill" onclick="toggleAccountMenu()">
+      <div class="profile-pill" onclick="switchPage('profile-page')">
         <div class="avatar" id="header-avatar">G</div>
         <div class="profile-info">
           <span class="app-name">Masak Apa?</span>
           <span class="user-name" id="header-username">Guest User</span>
         </div>
-        <i data-feather="chevron-down" class="chevron"></i>
       </div>
     </header>
-
-    <div id="account-overlay" class="overlay">
-      <div class="account-drawer">
-        <div class="drawer-header">
-          <h3>Akun Saya</h3>
-          <button class="close-btn" onclick="toggleAccountMenu()">
-            <i data-feather="x"></i>
-          </button>
-        </div>
-
-        <div class="login-section" id="login-section">
-          <p>Simpan preferensi dan resep favorit.</p>
-          <button class="google-btn" onclick="mockGoogleLogin()">
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
-              alt="G"
-            />
-            Masuk dengan Google
-          </button>
-        </div>
-
-        <div class="menu-list">
-          <div class="menu-group">
-            <h4>Profil & Preferensi</h4>
-            <a href="#" class="menu-item">
-              <i data-feather="user"></i> Kelola Profil
-            </a>
-            <a href="#" class="menu-item" onclick="toggleTheme()">
-              <i data-feather="moon"></i> Tema Tampilan
-            </a>
-          </div>
-
-          <div class="menu-group">
-            <h4>Info & Bantuan</h4>
-            <a href="#" class="menu-item"
-              ><i data-feather="help-circle"></i> Bantuan & FAQ</a
-            >
-            <a href="#" class="menu-item"
-              ><i data-feather="lock"></i> Kebijakan Privasi</a
-            >
-            <a href="#" class="menu-item"
-              ><i data-feather="info"></i> Tentang Aplikasi</a
-            >
-          </div>
-        </div>
-
-        <div class="drawer-footer">
-          <button class="trakteer-btn">
-            <i data-feather="coffee"></i> Traktir Kopi Developer
-          </button>
-          <button class="reset-btn" onclick="resetData()">
-            <i data-feather="trash-2"></i> Hapus Data & Reset
-          </button>
-        </div>
-      </div>
-    </div>
 
     <main>
       <section id="home" class="page active">
@@ -90,15 +36,12 @@
           <h1>Isi kulkas kamu ada apa aja?</h1>
           <p>Centang bahan yang tersedia, kami carikan resepnya.</p>
         </div>
-
         <div class="ingredients-grid" id="ingredients-container"></div>
-
         <div class="floating-action">
           <button class="find-btn" onclick="findRecipes()">
             Cari Resep <i data-feather="arrow-right"></i>
           </button>
         </div>
-
         <div id="recipe-results" class="recipe-list" style="display: none">
           <div class="divider"></div>
           <h2>Bisa masak ini sekarang:</h2>
@@ -112,13 +55,69 @@
       <section id="menu-page" class="page center-msg">
         <h2>Menu Mingguan</h2>
       </section>
+
       <section id="favorit" class="page center-msg">
         <h2>Resep Favorit</h2>
       </section>
-      <section id="profil-page" class="page center-msg">
-        <h2>Halaman Profil Utama</h2>
+
+      <section id="profile-page" class="page profile-container">
+        <div class="profile-header-large">
+          <div class="avatar-large" id="profile-avatar-large">G</div>
+          <h2 id="profile-name-large">Guest User</h2>
+          <p id="profile-email-large">Belum Login</p>
+          <div id="auth-btn-container"></div>
+        </div>
+
+        <div class="menu-list">
+          <div class="menu-group">
+            <h4>Preferensi</h4>
+            <div
+              class="menu-item"
+              onclick="alert('Fitur Kelola Profil segera hadir!')"
+            >
+              <i data-feather="user"></i> Kelola Profil
+            </div>
+            <div class="menu-item" onclick="toggleTheme()">
+              <i data-feather="moon"></i> Tema Tampilan
+            </div>
+          </div>
+
+          <div class="menu-group">
+            <h4>Info & Bantuan</h4>
+            <div class="menu-item" onclick="openPopup('bantuan')">
+              <i data-feather="help-circle"></i> Bantuan & FAQ
+            </div>
+            <div class="menu-item" onclick="openPopup('privasi')">
+              <i data-feather="lock"></i> Kebijakan Privasi
+            </div>
+            <div class="menu-item" onclick="openPopup('tentang')">
+              <i data-feather="info"></i> Tentang Aplikasi
+            </div>
+          </div>
+
+          <div class="menu-group">
+            <button class="trakteer-btn">
+              <i data-feather="coffee"></i> Traktir Kopi Developer
+            </button>
+            <button class="reset-btn" onclick="resetData()">
+              <i data-feather="trash-2"></i> Hapus Data & Reset
+            </button>
+          </div>
+        </div>
       </section>
     </main>
+
+    <div id="info-popup" class="popup-overlay">
+      <div class="popup-card">
+        <div class="popup-header">
+          <h3 id="popup-title">Judul Info</h3>
+          <button class="close-popup" onclick="closePopup()">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="popup-content" id="popup-body"></div>
+      </div>
+    </div>
 
     <nav class="bottom-nav">
       <a href="#" class="nav-item active" onclick="switchPage('home')">
@@ -137,18 +136,17 @@
         <i data-feather="heart"></i>
         <span>Favorit</span>
       </a>
-      <a href="#" class="nav-item" onclick="switchPage('profil-page')">
+      <a
+        href="#"
+        class="nav-item"
+        id="nav-profile"
+        onclick="switchPage('profile-page')"
+      >
         <i data-feather="user"></i>
         <span>Profil</span>
       </a>
     </nav>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
     <script src="app.js"></script>
-    <script>
-      feather.replace();
-    </script>
   </body>
 </html>
-
