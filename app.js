@@ -1,6 +1,11 @@
 // CONFIG FIREBASE (Paste Config Anda)
 const firebaseConfig = {
-  // ... Copy dari Firebase Console ...
+  apiKey: "AIzaSyBIM86KidwhWLIdQkVv38xfNJUK3pmKmc8",
+  authDomain: "cookingideas-2a894.firebaseapp.com",
+  projectId: "cookingideas-2a894",
+  storageBucket: "cookingideas-2a894.firebasestorage.app",
+  messagingSenderId: "376881959519",
+  appId: "1:376881959519:web:46f75e2c840654b1ba01ea"
 };
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -228,3 +233,4 @@ window.toggleTheme = () => {
     document.body.removeAttribute("data-theme");
   else document.body.setAttribute("data-theme", "dark");
 };
+
