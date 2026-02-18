@@ -1,16 +1,32 @@
-// Data Bahan-bahan
+// --- 1. KONFIGURASI FIREBASE (Paste dari Console Firebase di sini) ---
+const firebaseConfig = {
+  apiKey: "AIzaSyBIM86KidwhWLIdQkVv38xfNJUK3pmKmc8",
+  authDomain: "cookingideas-2a894.firebaseapp.com",
+  projectId: "cookingideas-2a894",
+  storageBucket: "cookingideas-2a894.firebasestorage.app",
+  messagingSenderId: "376881959519",
+  appId: "1:376881959519:web:46f75e2c840654b1ba01ea",
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
+
+// --- 2. LOGIC APLIKASI ---
+
+// Data Bahan & Resep (Tetap sama)
 const ingredients = [
   { id: "telur", name: "Telur", icon: "disc" },
   { id: "tempe", name: "Tempe", icon: "square" },
   { id: "tahu", name: "Tahu", icon: "box" },
-  { id: "ayam", name: "Ayam", icon: "gitlab" }, // icon placeholder
-  { id: "bawang", name: "Bawang", icon: "smile" }, // icon placeholder
+  { id: "ayam", name: "Ayam", icon: "gitlab" },
+  { id: "bawang", name: "Bawang", icon: "smile" },
   { id: "cabe", name: "Cabai", icon: "zap" },
   { id: "kecap", name: "Kecap", icon: "droplet" },
   { id: "nasi", name: "Nasi", icon: "loader" },
 ];
 
-// Data Resep Sederhana
 const recipes = [
   {
     name: "Nasi Goreng Kampung",
@@ -40,16 +56,94 @@ const recipes = [
 ];
 
 let selectedIngredients = new Set();
-let user = JSON.parse(localStorage.getItem("user")) || null;
+let currentUser = null; // Menyimpan data user login
 
-// --- Init ---
 document.addEventListener("DOMContentLoaded", () => {
   renderIngredients();
-  updateProfileUI();
+
+  // Cek Status Login (Realtime)
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      // User sedang login
+      currentUser = user;
+      updateUI_LoggedIn(user);
+    } else {
+      // User logout
+      currentUser = null;
+      updateUI_LoggedOut();
+    }
+  });
+
   feather.replace();
 });
 
-// 1. Render Bahan
+// --- FUNGSI LOGIN / LOGOUT (GOOGLE REAL) ---
+
+window.handleLogin = () => {
+  auth
+    .signInWithPopup(provider)
+    .then((result) => {
+      // Login sukses
+      toggleAccountMenu(); // Tutup menu
+      alert(`Selamat datang, ${result.user.displayName}!`);
+    })
+    .catch((error) => {
+      console.error(error);
+      alert("Login Gagal: " + error.message);
+    });
+};
+
+window.handleLogout = () => {
+  auth.signOut().then(() => {
+    alert("Berhasil Logout");
+    toggleAccountMenu();
+  });
+};
+
+function updateUI_LoggedIn(user) {
+  // Update Header
+  document.getElementById("header-username").innerText =
+    user.displayName.split(" ")[0]; // Nama depan aja
+
+  // Ganti Avatar dengan Foto Profil Google
+  const avatarEl = document.getElementById("header-avatar");
+  avatarEl.innerHTML = `<img src="${user.photoURL}" style="width:100%; height:100%; border-radius:50%;">`;
+  avatarEl.style.background = "transparent"; // Hapus background warna
+
+  // Update Menu Drawer
+  const loginSec = document.getElementById("login-section");
+  loginSec.innerHTML = `
+        <div style="text-align:center; margin-bottom:20px;">
+            <img src="${user.photoURL}" style="width:60px; height:60px; border-radius:50%; margin-bottom:10px;">
+            <h3 style="margin:0; font-size:16px;">${user.displayName}</h3>
+            <p style="margin:0; font-size:12px; color:#666;">${user.email}</p>
+        </div>
+        <button onclick="handleLogout()" class="reset-btn" style="width:100%; background:#ffebee; color:#d32f2f;">
+            <i data-feather="log-out"></i> Keluar / Logout
+        </button>
+    `;
+  feather.replace();
+}
+
+function updateUI_LoggedOut() {
+  // Reset Header
+  document.getElementById("header-username").innerText = "Guest";
+  document.getElementById("header-avatar").innerHTML = "G";
+  document.getElementById("header-avatar").style.background = "var(--primary)";
+
+  // Reset Menu Drawer ke Tombol Login Google
+  const loginSec = document.getElementById("login-section");
+  loginSec.innerHTML = `
+        <p>Simpan preferensi dan resep favorit.</p>
+        <button class="google-btn" onclick="handleLogin()">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="G">
+            Masuk dengan Google
+        </button>
+    `;
+}
+
+// --- FUNGSI UTAMA LAINNYA (SAMA SEPERTI SEBELUMNYA) ---
+
 function renderIngredients() {
   const container = document.getElementById("ingredients-container");
   container.innerHTML = ingredients
@@ -65,8 +159,10 @@ function renderIngredients() {
   feather.replace();
 }
 
-// 2. Toggle Pilihan Bahan
 window.toggleIngredient = (id, el) => {
+  // Efek getar dikit pas klik (Haptic Feedback)
+  if (navigator.vibrate) navigator.vibrate(10);
+
   if (selectedIngredients.has(id)) {
     selectedIngredients.delete(id);
     el.classList.remove("selected");
@@ -76,20 +172,17 @@ window.toggleIngredient = (id, el) => {
   }
 };
 
-// 3. Cari Resep (Inti Aplikasi)
 window.findRecipes = () => {
   const resultsContainer = document.getElementById("results-container");
   const resultsSection = document.getElementById("recipe-results");
 
-  // Filter Resep: Tampilkan jika semua bahan yang dibutuhkan tersedia
-  // Atau logika "Bisa dimasak": Bahan resep adalah SUBSET dari Selected
   const matched = recipes.filter((recipe) => {
     return recipe.req.every((r) => selectedIngredients.has(r));
   });
 
   if (matched.length === 0) {
     resultsContainer.innerHTML =
-      '<p style="text-align:center; color:var(--text-muted)">Belum ada resep yang pas nih. Coba tambah bahan lain (misal: Bawang, Kecap).</p>';
+      '<p style="text-align:center; color:var(--text-muted); font-size:14px; padding:20px;">Belum ada resep yang pas nih. <br>Coba tambah bahan lain.</p>';
   } else {
     resultsContainer.innerHTML = matched
       .map(
@@ -99,7 +192,7 @@ window.findRecipes = () => {
                 <div class="recipe-info">
                     <h3>${r.name}</h3>
                     <p>Bahan: ${r.req.join(", ")}</p>
-                    <span class="match-badge">Bisa dimasak sekarang!</span>
+                    <span class="match-badge">Bisa dimasak!</span>
                 </div>
             </div>
         `,
@@ -111,7 +204,6 @@ window.findRecipes = () => {
   resultsSection.scrollIntoView({ behavior: "smooth" });
 };
 
-// 4. Navigasi Halaman
 window.switchPage = (pageId) => {
   document
     .querySelectorAll(".page")
@@ -124,7 +216,6 @@ window.switchPage = (pageId) => {
   event.currentTarget.classList.add("active");
 };
 
-// 5. Account Menu Logic
 window.toggleAccountMenu = () => {
   const overlay = document.getElementById("account-overlay");
   if (overlay.classList.contains("visible")) {
@@ -132,40 +223,11 @@ window.toggleAccountMenu = () => {
     setTimeout(() => (overlay.style.display = "none"), 300);
   } else {
     overlay.style.display = "flex";
-    // Force reflow
     overlay.offsetHeight;
     overlay.classList.add("visible");
   }
 };
 
-// 6. Mock Login Google
-window.mockGoogleLogin = () => {
-  // Simulasi login sukses
-  const mockUser = {
-    name: "Desainer Senior",
-    initial: "D",
-    email: "desainer@contoh.com",
-  };
-  localStorage.setItem("user", JSON.stringify(mockUser));
-  user = mockUser;
-  updateProfileUI();
-  alert("Login Berhasil! (Simulasi)");
-  toggleAccountMenu();
-};
-
-function updateProfileUI() {
-  if (user) {
-    document.getElementById("header-username").innerText = user.name;
-    document.getElementById("header-avatar").innerText = user.initial;
-    document.getElementById("login-section").innerHTML =
-      `<p>Hai, <b>${user.name}</b>!<br><small>${user.email}</small></p>`;
-  } else {
-    document.getElementById("header-username").innerText = "Guest User";
-    document.getElementById("header-avatar").innerText = "G";
-  }
-}
-
-// 7. Dark Mode
 window.toggleTheme = () => {
   if (document.body.getAttribute("data-theme") === "dark") {
     document.body.removeAttribute("data-theme");
@@ -174,9 +236,8 @@ window.toggleTheme = () => {
   }
 };
 
-// 8. Reset Data
 window.resetData = () => {
-  if (confirm("Hapus semua data preferensi dan login?")) {
+  if (confirm("Hapus semua data local?")) {
     localStorage.clear();
     location.reload();
   }

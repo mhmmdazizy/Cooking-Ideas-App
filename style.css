@@ -18,7 +18,19 @@
   --border: #374151;
   --nav-bg: rgba(31, 41, 55, 0.9);
 }
+/* --- NATIVE APP FEEL --- */
+* {
+  /* Menghilangkan highlight biru saat diklik di Android/Chrome */
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
 
+/* Biarkan input teks tetap bisa diketik/diblok */
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
 body {
   font-family: "Poppins", sans-serif;
   background-color: var(--bg);
@@ -26,6 +38,11 @@ body {
   margin: 0;
   padding-bottom: 100px; /* Space for nav */
   transition: background 0.3s;
+  /* Mencegah user memblok/select teks (opsional, biar kayak app native) */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Scroll yang lebih smooth */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Header */
