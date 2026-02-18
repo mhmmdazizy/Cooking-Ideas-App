@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Masak Apa?</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#ffffff" />
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header id="main-header">
+      <div class="profile-pill" onclick="toggleAccountMenu()">
+        <div class="avatar" id="header-avatar">G</div>
+        <div class="profile-info">
+          <span class="app-name">Masak Apa?</span>
+          <span class="user-name" id="header-username">Guest User</span>
+        </div>
+        <i data-feather="chevron-down" class="chevron"></i>
+      </div>
+    </header>
+
+    <div id="account-overlay" class="overlay">
+      <div class="account-drawer">
+        <div class="drawer-header">
+          <h3>Akun Saya</h3>
+          <button class="close-btn" onclick="toggleAccountMenu()">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+
+        <div class="login-section" id="login-section">
+          <p>Simpan preferensi dan resep favorit.</p>
+          <button class="google-btn" onclick="mockGoogleLogin()">
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
+              alt="G"
+            />
+            Masuk dengan Google
+          </button>
+        </div>
+
+        <div class="menu-list">
+          <div class="menu-group">
+            <h4>Profil & Preferensi</h4>
+            <a href="#" class="menu-item">
+              <i data-feather="user"></i> Kelola Profil
+            </a>
+            <a href="#" class="menu-item" onclick="toggleTheme()">
+              <i data-feather="moon"></i> Tema Tampilan
+            </a>
+          </div>
+
+          <div class="menu-group">
+            <h4>Info & Bantuan</h4>
+            <a href="#" class="menu-item"
+              ><i data-feather="help-circle"></i> Bantuan & FAQ</a
+            >
+            <a href="#" class="menu-item"
+              ><i data-feather="lock"></i> Kebijakan Privasi</a
+            >
+            <a href="#" class="menu-item"
+              ><i data-feather="info"></i> Tentang Aplikasi</a
+            >
+          </div>
+        </div>
+
+        <div class="drawer-footer">
+          <button class="trakteer-btn">
+            <i data-feather="coffee"></i> Traktir Kopi Developer
+          </button>
+          <button class="reset-btn" onclick="resetData()">
+            <i data-feather="trash-2"></i> Hapus Data & Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <main>
+      <section id="home" class="page active">
+        <div class="hero">
+          <h1>Isi kulkas kamu ada apa aja?</h1>
+          <p>Centang bahan yang tersedia, kami carikan resepnya.</p>
+        </div>
+
+        <div class="ingredients-grid" id="ingredients-container"></div>
+
+        <div class="floating-action">
+          <button class="find-btn" onclick="findRecipes()">
+            Cari Resep <i data-feather="arrow-right"></i>
+          </button>
+        </div>
+
+        <div id="recipe-results" class="recipe-list" style="display: none">
+          <div class="divider"></div>
+          <h2>Bisa masak ini sekarang:</h2>
+          <div id="results-container"></div>
+        </div>
+      </section>
+
+      <section id="explore" class="page center-msg">
+        <h2>Eksplorasi Resep</h2>
+      </section>
+      <section id="menu-page" class="page center-msg">
+        <h2>Menu Mingguan</h2>
+      </section>
+      <section id="favorit" class="page center-msg">
+        <h2>Resep Favorit</h2>
+      </section>
+      <section id="profil-page" class="page center-msg">
+        <h2>Halaman Profil Utama</h2>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <a href="#" class="nav-item active" onclick="switchPage('home')">
+        <i data-feather="home"></i>
+        <span>Home</span>
+      </a>
+      <a href="#" class="nav-item" onclick="switchPage('explore')">
+        <i data-feather="compass"></i>
+        <span>Explore</span>
+      </a>
+      <a href="#" class="nav-item" onclick="switchPage('menu-page')">
+        <i data-feather="book-open"></i>
+        <span>Menu</span>
+      </a>
+      <a href="#" class="nav-item" onclick="switchPage('favorit')">
+        <i data-feather="heart"></i>
+        <span>Favorit</span>
+      </a>
+      <a href="#" class="nav-item" onclick="switchPage('profil-page')">
+        <i data-feather="user"></i>
+        <span>Profil</span>
+      </a>
+    </nav>
+
+    <script src="app.js"></script>
+    <script>
+      feather.replace();
+    </script>
+  </body>
+</html>
