@@ -9,7 +9,7 @@
     <title>Masak Apa?</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#FF6B6B" />
     <script src="https://unpkg.com/feather-icons"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
@@ -20,130 +20,134 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   </head>
   <body>
-    <header id="main-header">
-      <div class="profile-pill" onclick="switchPage('profile-page')">
-        <div class="avatar" id="header-avatar">G</div>
-        <div class="profile-info">
-          <span class="app-name">Masak Apa?</span>
-          <span class="user-name" id="header-username">Guest User</span>
-        </div>
+    <header class="app-header">
+      <div class="header-left">
+        <h1 id="page-title">Mau masak apa?</h1>
+        <p id="page-subtitle" class="fade-text">Yuk cek isi kulkasmu</p>
+      </div>
+      <div class="header-right">
+        <button class="notif-btn" onclick="toggleNotifSheet()">
+          <i data-feather="bell"></i>
+          <span class="notif-dot"></span>
+        </button>
       </div>
     </header>
 
-    <main>
+    <main class="content-sheet">
       <section id="home" class="page active">
-        <div class="hero">
-          <h1>Isi kulkas kamu ada apa aja?</h1>
-          <p>Centang bahan yang tersedia, kami carikan resepnya.</p>
+        <div class="search-wrap">
+          <h3>Bahan tersedia:</h3>
         </div>
         <div class="ingredients-grid" id="ingredients-container"></div>
-        <div class="floating-action">
-          <button class="find-btn" onclick="findRecipes()">
-            Cari Resep <i data-feather="arrow-right"></i>
-          </button>
-        </div>
-        <div id="recipe-results" class="recipe-list" style="display: none">
+
+        <button class="find-btn" onclick="findRecipes()">
+          Cari Resep <i data-feather="arrow-right"></i>
+        </button>
+
+        <div id="recipe-results" style="display: none; margin-top: 20px">
           <div class="divider"></div>
-          <h2>Bisa masak ini sekarang:</h2>
+          <h4>Hasil Pencarian:</h4>
           <div id="results-container"></div>
         </div>
       </section>
 
-      <section id="explore" class="page center-msg">
-        <h2>Eksplorasi Resep</h2>
-      </section>
-      <section id="menu-page" class="page center-msg">
-        <h2>Menu Mingguan</h2>
+      <section id="explore" class="page">
+        <div class="masonry-grid" id="explore-container"></div>
       </section>
 
-      <section id="favorit" class="page center-msg">
-        <h2>Resep Favorit</h2>
+      <section id="menu-page" class="page">
+        <div class="masonry-grid" id="menu-container"></div>
       </section>
 
-      <section id="profile-page" class="page profile-container">
-        <div class="profile-header-large">
-          <div class="avatar-large" id="profile-avatar-large">G</div>
-          <h2 id="profile-name-large">Guest User</h2>
-          <p id="profile-email-large">Belum Login</p>
-          <div id="auth-btn-container"></div>
+      <section id="favorit" class="page">
+        <div class="empty-state">
+          <i
+            data-feather="heart"
+            style="width: 40px; height: 40px; color: #ddd"
+          ></i>
+          <p>Belum ada resep favorit.</p>
+        </div>
+      </section>
+
+      <section id="profile-page" class="page">
+        <div class="profile-card-inner">
+          <div class="avatar-large" id="profile-avatar">G</div>
+          <h3 id="profile-name">Guest User</h3>
+          <p id="profile-email">Login untuk akses penuh</p>
+          <div id="auth-btn-container" style="margin-top: 10px"></div>
         </div>
 
         <div class="menu-list">
-          <div class="menu-group">
-            <h4>Preferensi</h4>
-            <div
-              class="menu-item"
-              onclick="alert('Fitur Kelola Profil segera hadir!')"
-            >
-              <i data-feather="user"></i> Kelola Profil
-            </div>
-            <div class="menu-item" onclick="toggleTheme()">
-              <i data-feather="moon"></i> Tema Tampilan
-            </div>
+          <div class="menu-item" onclick="openPopup('bantuan')">
+            <i data-feather="help-circle"></i> Bantuan & FAQ
           </div>
-
-          <div class="menu-group">
-            <h4>Info & Bantuan</h4>
-            <div class="menu-item" onclick="openPopup('bantuan')">
-              <i data-feather="help-circle"></i> Bantuan & FAQ
-            </div>
-            <div class="menu-item" onclick="openPopup('privasi')">
-              <i data-feather="lock"></i> Kebijakan Privasi
-            </div>
-            <div class="menu-item" onclick="openPopup('tentang')">
-              <i data-feather="info"></i> Tentang Aplikasi
-            </div>
+          <div class="menu-item" onclick="toggleTheme()">
+            <i data-feather="moon"></i> Mode Gelap
           </div>
-
-          <div class="menu-group">
-            <button class="trakteer-btn">
-              <i data-feather="coffee"></i> Traktir Kopi Developer
-            </button>
-            <button class="reset-btn" onclick="resetData()">
-              <i data-feather="trash-2"></i> Hapus Data & Reset
-            </button>
+          <div class="menu-item text-danger" onclick="resetData()">
+            <i data-feather="trash-2"></i> Reset Data
           </div>
         </div>
       </section>
     </main>
 
-    <div id="info-popup" class="popup-overlay">
-      <div class="popup-card">
-        <div class="popup-header">
-          <h3 id="popup-title">Judul Info</h3>
-          <button class="close-popup" onclick="closePopup()">
-            <i data-feather="x"></i>
-          </button>
+    <div id="notif-sheet" class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <h3>Notifikasi</h3>
+        <div class="notif-list">
+          <div class="notif-item unread">
+            <div class="notif-icon"><i data-feather="zap"></i></div>
+            <div class="notif-text">
+              <b>Resep Baru!</b>
+              <p>Coba bikin Seblak Ceker Mercon yuk.</p>
+              <span>Baru saja</span>
+            </div>
+          </div>
+          <div class="notif-item">
+            <div class="notif-icon"><i data-feather="info"></i></div>
+            <div class="notif-text">
+              <b>Update Aplikasi</b>
+              <p>Tampilan baru sudah tersedia.</p>
+              <span>2 jam lalu</span>
+            </div>
+          </div>
         </div>
-        <div class="popup-content" id="popup-body"></div>
+      </div>
+    </div>
+    <div
+      id="sheet-backdrop"
+      class="backdrop"
+      onclick="toggleNotifSheet()"
+    ></div>
+
+    <div id="detail-view" class="detail-overlay">
+      <button class="close-detail" onclick="closeDetail()">
+        <i data-feather="arrow-left"></i>
+      </button>
+      <div class="detail-img" id="detail-img"></div>
+      <div class="detail-content">
+        <span class="tag" id="detail-tag">RESEP</span>
+        <h2 id="detail-title">Judul</h2>
+        <p id="detail-desc">Deskripsi...</p>
       </div>
     </div>
 
     <nav class="bottom-nav">
       <a href="#" class="nav-item active" onclick="switchPage('home')">
         <i data-feather="home"></i>
-        <span>Home</span>
       </a>
       <a href="#" class="nav-item" onclick="switchPage('explore')">
         <i data-feather="compass"></i>
-        <span>Explore</span>
       </a>
       <a href="#" class="nav-item" onclick="switchPage('menu-page')">
         <i data-feather="book-open"></i>
-        <span>Menu</span>
       </a>
       <a href="#" class="nav-item" onclick="switchPage('favorit')">
         <i data-feather="heart"></i>
-        <span>Favorit</span>
       </a>
-      <a
-        href="#"
-        class="nav-item"
-        id="nav-profile"
-        onclick="switchPage('profile-page')"
-      >
+      <a href="#" class="nav-item" onclick="switchPage('profile-page')">
         <i data-feather="user"></i>
-        <span>Profil</span>
       </a>
     </nav>
 

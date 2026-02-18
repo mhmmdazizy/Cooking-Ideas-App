@@ -15,247 +15,111 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 
-// --- 2. DATA UTAMA ---
+// --- DATA DUMMY ---
 const ingredients = [
   { id: "telur", name: "Telur", icon: "disc" },
   { id: "tempe", name: "Tempe", icon: "square" },
   { id: "tahu", name: "Tahu", icon: "box" },
   { id: "ayam", name: "Ayam", icon: "gitlab" },
+  { id: "sosis", name: "Sosis", icon: "circle" },
   { id: "bawang", name: "Bawang", icon: "smile" },
   { id: "cabe", name: "Cabai", icon: "zap" },
   { id: "kecap", name: "Kecap", icon: "droplet" },
-  { id: "nasi", name: "Nasi", icon: "loader" },
 ];
 
-const recipes = [
+const articles = [
   {
-    name: "Nasi Goreng Kampung",
-    req: ["nasi", "bawang", "kecap"],
-    img: "https://placehold.co/60x60/orange/white?text=NG",
+    title: "Cara Simpan Sayur Awet Sebulan",
+    tag: "TIPS",
+    img: "https://images.unsplash.com/photo-1590779033100-9f60a05a013d?auto=format&fit=crop&w=300&q=80",
   },
   {
-    name: "Telur Dadar Kecap",
-    req: ["telur", "kecap", "bawang"],
-    img: "https://placehold.co/60x60/yellow/black?text=TD",
+    title: "5 Bumbu Dasar Wajib Ada",
+    tag: "HACK",
+    img: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=300&q=80",
   },
   {
-    name: "Orek Tempe",
-    req: ["tempe", "kecap", "cabe"],
-    img: "https://placehold.co/60x60/brown/white?text=OT",
+    title: "Kenapa Masakanmu Asin?",
+    tag: "INFO",
+    img: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=300&q=80",
   },
   {
-    name: "Tahu Penyet",
-    req: ["tahu", "cabe", "bawang"],
-    img: "https://placehold.co/60x60/white/black?text=TP",
+    title: "Alat Masak Anak Kos",
+    tag: "LIST",
+    img: "https://images.unsplash.com/photo-1584620606775-430335b71948?auto=format&fit=crop&w=300&q=80",
+  },
+];
+
+const menus = [
+  {
+    title: "Nasi Goreng Spesial",
+    desc: "Enak, gurih, pedas mantap.",
+    img: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=300&q=80",
   },
   {
-    name: "Telur Ceplok",
-    req: ["telur"],
-    img: "https://placehold.co/60x60/yellow/white?text=TC",
+    title: "Soto Ayam Kuning",
+    desc: "Kuah segar dengan rempah alami.",
+    img: "https://images.unsplash.com/photo-1633436375795-12b3b339712f?auto=format&fit=crop&w=300&q=80",
+  },
+  {
+    title: "Tumis Kangkung",
+    desc: "Cepat saji hanya 5 menit.",
+    img: "https://images.unsplash.com/photo-1566311684307-c255734e9eb0?auto=format&fit=crop&w=300&q=80",
+  },
+  {
+    title: "Ayam Bakar Madu",
+    desc: "Manis legit meresap.",
+    img: "https://images.unsplash.com/photo-1614398751058-eb2e0bf63e53?auto=format&fit=crop&w=300&q=80",
   },
 ];
 
 let selectedIngredients = new Set();
 let currentUser = null;
 
-// --- 3. LOGIKA APLIKASI ---
+// --- INIT ---
 document.addEventListener("DOMContentLoaded", () => {
   renderIngredients();
+  renderGrid("explore-container", articles);
+  renderGrid("menu-container", menus);
+  feather.replace();
 
-  // Cek Login Status
   auth.onAuthStateChanged((user) => {
-    if (user) {
-      currentUser = user;
-      updateUI_LoggedIn(user);
-    } else {
-      currentUser = null;
-      updateUI_LoggedOut();
-    }
+    currentUser = user;
+    updateAuthUI(user);
   });
-
-  feather.replace();
 });
 
-// --- Navigasi Halaman ---
-window.switchPage = (pageId) => {
-  // 1. Hide semua page
-  document
-    .querySelectorAll(".page")
-    .forEach((p) => p.classList.remove("active"));
-  // 2. Show target page
-  document.getElementById(pageId).classList.add("active");
-
-  // 3. Update Bottom Nav Active State
-  document
-    .querySelectorAll(".nav-item")
-    .forEach((n) => n.classList.remove("active"));
-
-  // Highlight nav item yang sesuai
-  let navId = "";
-  if (pageId === "home") navId = "home";
-  else if (pageId === "explore") navId = "explore";
-  else if (pageId === "menu-page") navId = "menu-page";
-  else if (pageId === "favorit") navId = "favorit";
-  else if (pageId === "profile-page") {
-    navId = "profile-page";
-    document.getElementById("nav-profile").classList.add("active"); // Khusus profil
-  }
-
-  // Cari elemen nav yg href onclick-nya match (kecuali profil yg udah dihandle)
-  if (pageId !== "profile-page") {
-    const targetNav = Array.from(document.querySelectorAll(".nav-item")).find(
-      (el) => el.getAttribute("onclick").includes(pageId),
-    );
-    if (targetNav) targetNav.classList.add("active");
-  }
-
-  // 4. Atur Header (Sembunyikan header mini di halaman profil full)
-  const header = document.getElementById("main-header");
-  if (pageId === "profile-page") {
-    header.style.display = "none";
-  } else {
-    header.style.display = "block";
-  }
-
-  window.scrollTo(0, 0);
-};
-
-// --- Update UI Profil ---
-function updateUI_LoggedIn(user) {
-  // Mini Header
-  document.getElementById("header-username").innerText =
-    user.displayName.split(" ")[0];
-  const avatarEl = document.getElementById("header-avatar");
-  avatarEl.innerHTML = `<img src="${user.photoURL}">`;
-  avatarEl.style.background = "transparent";
-
-  // Halaman Profil Besar
-  document.getElementById("profile-name-large").innerText = user.displayName;
-  document.getElementById("profile-email-large").innerText = user.email;
-  document.getElementById("profile-avatar-large").innerHTML =
-    `<img src="${user.photoURL}">`;
-  document.getElementById("profile-avatar-large").style.background =
-    "transparent";
-
-  // Tombol Logout
-  document.getElementById("auth-btn-container").innerHTML = `
-        <button class="auth-btn btn-logout" onclick="handleLogout()">
-            <i data-feather="log-out"></i> Keluar
-        </button>
-    `;
-  feather.replace();
-}
-
-function updateUI_LoggedOut() {
-  // Mini Header
-  document.getElementById("header-username").innerText = "Guest";
-  document.getElementById("header-avatar").innerHTML = "G";
-  document.getElementById("header-avatar").style.background = "var(--primary)";
-
-  // Halaman Profil Besar
-  document.getElementById("profile-name-large").innerText = "Guest User";
-  document.getElementById("profile-email-large").innerText =
-    "Login untuk simpan data";
-  document.getElementById("profile-avatar-large").innerHTML = "G";
-  document.getElementById("profile-avatar-large").style.background =
-    "var(--primary)";
-
-  // Tombol Login
-  document.getElementById("auth-btn-container").innerHTML = `
-        <button class="auth-btn btn-login-google" onclick="handleLogin()">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="18">
-            Masuk dengan Google
-        </button>
-    `;
-}
-
-// --- Login & Logout ---
-window.handleLogin = () => {
-  auth
-    .signInWithPopup(provider)
-    .then((result) => {
-      alert(`Selamat datang, ${result.user.displayName}!`);
-    })
-    .catch((error) => alert("Login Gagal: " + error.message));
-};
-
-window.handleLogout = () => {
-  auth.signOut().then(() => alert("Berhasil Logout"));
-};
-
-// --- Popup Info & Bantuan ---
-const popupData = {
-  bantuan: {
-    title: "Bantuan & FAQ",
-    content: `
-            <h4>Cara pakai aplikasi?</h4>
-            <p>Cukup pilih bahan yang ada di kulkas kamu di halaman Home, lalu klik "Cari Resep".</p>
-            <h4>Apakah resepnya akurat?</h4>
-            <p>Resep disesuaikan dengan bahan minimal yang kamu punya.</p>
-        `,
-  },
-  privasi: {
-    title: "Kebijakan Privasi",
-    content: `
-            <p>Kami sangat menghargai privasi Anda. Data login Google hanya digunakan untuk menampilkan nama dan foto profil.</p>
-            <p>Kami tidak menyimpan data pribadi sensitif Anda di server kami.</p>
-        `,
-  },
-  tentang: {
-    title: "Tentang Aplikasi",
-    content: `
-            <p><b>Masak Apa? v1.0</b></p>
-            <p>Dibuat dengan ❤️ oleh Developer.</p>
-            <p>Aplikasi ini dibuat untuk membantu anak kos dan ibu rumah tangga memasak tanpa bingung.</p>
-        `,
-  },
-};
-
-window.openPopup = (type) => {
-  const data = popupData[type];
-  if (data) {
-    document.getElementById("popup-title").innerText = data.title;
-    document.getElementById("popup-body").innerHTML = data.content;
-
-    const popup = document.getElementById("info-popup");
-    popup.style.display = "flex";
-    // Force Reflow
-    popup.offsetHeight;
-    popup.classList.add("active");
-  }
-};
-
-window.closePopup = () => {
-  const popup = document.getElementById("info-popup");
-  popup.classList.remove("active");
-  setTimeout(() => {
-    popup.style.display = "none";
-  }, 300);
-};
-
-// Tutup popup kalau klik di luar area kartu
-document.getElementById("info-popup").addEventListener("click", (e) => {
-  if (e.target.id === "info-popup") closePopup();
-});
-
-// --- Fitur Lain (Sama) ---
+// --- RENDER FUNCTIONS ---
 function renderIngredients() {
-  const container = document.getElementById("ingredients-container");
-  container.innerHTML = ingredients
+  document.getElementById("ingredients-container").innerHTML = ingredients
     .map(
       (ing) => `
-        <div class="ing-item" onclick="toggleIngredient('${ing.id}', this)">
-            <i data-feather="${ing.icon}"></i>
-            ${ing.name}
+        <div class="ing-item" onclick="toggleIng('${ing.id}', this)">
+            <i data-feather="${ing.icon}"></i> ${ing.name}
         </div>
     `,
     )
     .join("");
-  feather.replace();
 }
 
-window.toggleIngredient = (id, el) => {
-  if (navigator.vibrate) navigator.vibrate(10);
+function renderGrid(containerId, data) {
+  document.getElementById(containerId).innerHTML = data
+    .map(
+      (item) => `
+        <div class="card-item" onclick="openDetail('${item.title}', '${item.desc || "Baca selengkapnya di artikel ini."}', '${item.img}', '${item.tag || "MENU"}')">
+            <img src="${item.img}" class="card-thumb" loading="lazy">
+            <div class="card-info">
+                <span>${item.tag || "RESEP"}</span>
+                <h4>${item.title}</h4>
+            </div>
+        </div>
+    `,
+    )
+    .join("");
+}
+
+// --- INTERACTIONS ---
+window.toggleIng = (id, el) => {
   if (selectedIngredients.has(id)) {
     selectedIngredients.delete(id);
     el.classList.remove("selected");
@@ -265,48 +129,84 @@ window.toggleIngredient = (id, el) => {
   }
 };
 
-window.findRecipes = () => {
-  const resultsContainer = document.getElementById("results-container");
-  const resultsSection = document.getElementById("recipe-results");
+window.switchPage = (pageId) => {
+  // Hide Pages
+  document
+    .querySelectorAll(".page")
+    .forEach((p) => p.classList.remove("active"));
+  document.getElementById(pageId).classList.add("active");
 
-  const matched = recipes.filter((recipe) => {
-    return recipe.req.every((r) => selectedIngredients.has(r));
-  });
+  // Update Nav
+  document
+    .querySelectorAll(".nav-item")
+    .forEach((n) => n.classList.remove("active"));
+  const navIndex = [
+    "home",
+    "explore",
+    "menu-page",
+    "favorit",
+    "profile-page",
+  ].indexOf(pageId);
+  document.querySelectorAll(".nav-item")[navIndex].classList.add("active");
 
-  if (matched.length === 0) {
-    resultsContainer.innerHTML =
-      '<p style="text-align:center; color:var(--text-muted); padding:20px;">Bahan kurang lengkap.</p>';
+  // Update Header Text & Warna
+  const titles = {
+    home: { t: "Mau masak apa?", s: "Yuk cek isi kulkasmu" },
+    explore: { t: "Jelajahi", s: "Tips & Trik Dapur" },
+    "menu-page": { t: "Daftar Menu", s: "Inspirasi Masakan" },
+    favorit: { t: "Favoritku", s: "Disimpan untuk nanti" },
+    "profile-page": { t: "Profil", s: "Pengaturan Akun" },
+  };
+  document.getElementById("page-title").innerText = titles[pageId].t;
+  document.getElementById("page-subtitle").innerText = titles[pageId].s;
+
+  // Reset Scroll
+  document.querySelector(".content-sheet").scrollTo(0, 0);
+};
+
+// --- NOTIFIKASI SHEET ---
+window.toggleNotifSheet = () => {
+  const sheet = document.getElementById("notif-sheet");
+  const backdrop = document.getElementById("sheet-backdrop");
+
+  if (sheet.classList.contains("active")) {
+    sheet.classList.remove("active");
+    backdrop.classList.remove("active");
+    setTimeout(() => (backdrop.style.display = "none"), 300);
   } else {
-    resultsContainer.innerHTML = matched
-      .map(
-        (r) => `
-            <div class="recipe-card">
-                <img src="${r.img}" class="recipe-img">
-                <div class="recipe-info">
-                    <h3>${r.name}</h3>
-                    <p>Bahan: ${r.req.join(", ")}</p>
-                    <span class="match-badge">Bisa dimasak!</span>
-                </div>
-            </div>
-        `,
-      )
-      .join("");
+    backdrop.style.display = "block";
+    backdrop.offsetHeight; // force reflow
+    backdrop.classList.add("active");
+    sheet.classList.add("active");
   }
-  resultsSection.style.display = "block";
-  resultsSection.scrollIntoView({ behavior: "smooth" });
 };
 
-window.toggleTheme = () => {
-  if (document.body.getAttribute("data-theme") === "dark") {
-    document.body.removeAttribute("data-theme");
+// --- DETAIL VIEW OVERLAY ---
+window.openDetail = (title, desc, img, tag) => {
+  document.getElementById("detail-title").innerText = title;
+  document.getElementById("detail-desc").innerText = desc;
+  document.getElementById("detail-img").style.backgroundImage = `url('${img}')`;
+  document.getElementById("detail-tag").innerText = tag;
+  document.getElementById("detail-view").classList.add("active");
+};
+
+window.closeDetail = () => {
+  document.getElementById("detail-view").classList.remove("active");
+};
+
+// --- AUTH ---
+function updateAuthUI(user) {
+  const btnContainer = document.getElementById("auth-btn-container");
+  if (user) {
+    document.getElementById("profile-name").innerText = user.displayName;
+    document.getElementById("profile-email").innerText = user.email;
+    document.getElementById("profile-avatar").innerHTML =
+      `<img src="${user.photoURL}">`;
+    btnContainer.innerHTML = `<button class="find-btn" style="background:#fee2e2; color:#b91c1c; padding:10px;" onclick="auth.signOut()">Logout</button>`;
   } else {
-    document.body.setAttribute("data-theme", "dark");
+    document.getElementById("profile-name").innerText = "Guest User";
+    document.getElementById("profile-email").innerText = "Belum Login";
+    document.getElementById("profile-avatar").innerHTML = "G";
+    btnContainer.innerHTML = `<button class="find-btn" style="background:#fff; color:#333; border:1px solid #ccc; padding:10px;" onclick="auth.signInWithPopup(provider)">Login Google</button>`;
   }
-};
-
-window.resetData = () => {
-  if (confirm("Hapus semua data local?")) {
-    localStorage.clear();
-    location.reload();
-  }
-};
+}
