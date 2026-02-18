@@ -442,7 +442,7 @@ header {
   height: 22px;
 }
 
-/* POPUP */
+/* --- POPUP JADI BOTTOM SHEET --- */
 .popup-overlay {
   position: fixed;
   top: 0;
@@ -451,32 +451,52 @@ header {
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
-  z-index: 200;
+  z-index: 1000; /* Z-index paling tinggi */
   display: none;
-  align-items: center;
+  align-items: flex-end; /* Supaya nempel bawah */
   justify-content: center;
 }
+
 .popup-overlay.active {
   display: flex;
 }
+
 .popup-card {
   background: var(--surface);
-  width: 85%;
-  max-width: 350px;
-  border-radius: 20px;
+  width: 100%;
+  max-width: 100%; /* Full width di HP */
+  border-radius: 24px 24px 0 0; /* Lengkung atas saja */
   padding: 24px;
   position: relative;
-  animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  max-height: 85vh; /* Jangan menuhin layar */
+  overflow-y: auto;
+  animation: slideUp 0.3s cubic-bezier(0.19, 1, 0.22, 1);
 }
-@keyframes popUp {
+
+@keyframes slideUp {
   from {
-    transform: scale(0.8);
-    opacity: 0;
+    transform: translateY(100%);
   }
   to {
-    transform: scale(1);
-    opacity: 1;
+    transform: translateY(0);
   }
+}
+
+/* Pastikan FAQ Answer bisa muncul (Request no 1) */
+.faq-item .faq-answer {
+  display: none;
+  padding: 10px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  border-top: 1px dashed var(--border);
+  margin-top: 5px;
+}
+.faq-item.active .faq-answer {
+  display: block; /* Muncul saat class active ada */
+}
+.faq-item.active i {
+  transform: rotate(180deg);
+  transition: 0.2s;
 }
 .popup-header {
   display: flex;

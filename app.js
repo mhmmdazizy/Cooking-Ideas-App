@@ -301,35 +301,36 @@ window.searchFaq = () => {
 window.openPopup = (type) => {
   let title = "";
   let content = "";
-  let iconName = ""; // Variabel icon baru
+  let iconName = "";
 
   if (type === "bantuan") {
     title = "Bantuan & FAQ";
-    iconName = "help-circle"; // Icon
+    iconName = "help-circle";
     content = `
-            <input type="text" id="faq-search" onkeyup="searchFaq()" placeholder="Cari pertanyaan..." style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px; font-size:14px; box-sizing:border-box;">
+            <input type="text" placeholder="Cari pertanyaan..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px; font-size:14px;">
             
-            <div class="faq-list" id="faq-list">
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">Cara cari resep? <i data-feather="chevron-down"></i></div>
+            <div class="faq-list">
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <div class="faq-question">Cara cari resep? <i data-feather="chevron-down"></i></div>
                     <div class="faq-answer">Pilih bahan yang kamu punya di halaman Home, lalu klik tombol Cari Resep.</div>
                 </div>
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">Apakah gratis? <i data-feather="chevron-down"></i></div>
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <div class="faq-question">Apakah gratis? <i data-feather="chevron-down"></i></div>
                     <div class="faq-answer">Ya, aplikasi ini 100% gratis untuk digunakan siapa saja.</div>
                 </div>
-                <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">Cara simpan resep? <i data-feather="chevron-down"></i></div>
-                    <div class="faq-answer">Klik ikon hati (love) di pojok kanan atas gambar resep.</div>
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <div class="faq-question">Lupa password? <i data-feather="chevron-down"></i></div>
+                    <div class="faq-answer">Karena login menggunakan Google, silakan reset password akun Google Anda.</div>
                 </div>
             </div>
+
             <button class="find-btn" style="margin-top:20px; font-size:14px; padding:10px;">
                 <i data-feather="mail"></i> Hubungi Dukungan
             </button>
         `;
   } else if (type === "privasi") {
     title = "Kebijakan Privasi";
-    iconName = "shield"; // Icon
+    iconName = "shield";
     content = `
             <div class="privacy-text">
                 <b>Pendahuluan</b><br>
@@ -346,7 +347,7 @@ window.openPopup = (type) => {
         `;
   } else if (type === "tentang") {
     title = "Tentang Aplikasi";
-    iconName = "info"; // Icon
+    iconName = "info";
     content = `
             <div style="text-align:center;">
                 <div class="about-logo">MA?</div>
@@ -369,14 +370,29 @@ window.openPopup = (type) => {
         `;
   }
 
-  // Update Judul & Icon
+  // Set konten popup
   document.getElementById("popup-title").innerText = title;
-  // Set Icon secara dinamis
   document.getElementById("popup-icon").setAttribute("data-feather", iconName);
-
   document.getElementById("popup-body").innerHTML = content;
+
+  // Tampilkan Popup
   document.getElementById("info-popup").classList.add("active");
-  feather.replace();
+  feather.replace(); // Render icon baru
+};
+
+window.searchFaq = () => {
+  const input = document.getElementById("faq-search");
+  const filter = input.value.toLowerCase();
+  const items = document.getElementsByClassName("faq-item");
+
+  for (let i = 0; i < items.length; i++) {
+    const text = items[i].innerText || items[i].textContent;
+    if (text.toLowerCase().indexOf(filter) > -1) {
+      items[i].style.display = "";
+    } else {
+      items[i].style.display = "none";
+    }
+  }
 };
 
 // Fungsi Toggle Accordion FAQ
@@ -391,34 +407,39 @@ window.resetData = () => {
 window.toggleTheme = () => {
   const body = document.body;
   const isDark = body.getAttribute("data-theme") === "dark";
+  const btn = document.getElementById("theme-btn"); // Ambil tombol lewat ID
 
-  // Logic ganti tema
   if (isDark) {
+    // Pindah ke Light Mode
     body.removeAttribute("data-theme");
+    if (btn) btn.innerHTML = `<i data-feather="moon"></i> Mode Gelap`; // Teks ajakan
   } else {
+    // Pindah ke Dark Mode
     body.setAttribute("data-theme", "dark");
+    if (btn) btn.innerHTML = `<i data-feather="sun"></i> Mode Terang`; // Teks ajakan
   }
-
-  // Logic ganti Icon & Teks di Menu Profil secara realtime
-  // Cari elemen menu item tema (kita cari manual lewat text content atau ID)
-  // Tips: Biar gampang, di HTML kasih ID ke div menu tema: <div id="theme-menu-item" ...>
-  // Tapi pake cara querySelector text juga bisa:
-  const themeItems = document.querySelectorAll(".menu-item");
-  themeItems.forEach((item) => {
-    if (
-      item.innerText.includes("Tema Tampilan") ||
-      item.innerText.includes("Mode")
-    ) {
-      if (!isDark) {
-        // Jadi Dark
-        item.innerHTML = `<i data-feather="sun"></i> Mode Terang`;
-        item.classList.add("theme-btn-active");
-      } else {
-        // Jadi Light
-        item.innerHTML = `<i data-feather="moon"></i> Mode Gelap`;
-        item.classList.remove("theme-btn-active");
-      }
-      feather.replace();
-    }
-  });
+  feather.replace();
 };
+
+// Logic ganti Icon & Teks di Menu Profil secara realtime
+// Cari elemen menu item tema (kita cari manual lewat text content atau ID)
+// Tips: Biar gampang, di HTML kasih ID ke div menu tema: <div id="theme-menu-item" ...>
+// Tapi pake cara querySelector text juga bisa:
+const themeItems = document.querySelectorAll(".menu-item");
+themeItems.forEach((item) => {
+  if (
+    item.innerText.includes("Tema Tampilan") ||
+    item.innerText.includes("Mode")
+  ) {
+    if (!isDark) {
+      // Jadi Dark
+      item.innerHTML = `<i data-feather="sun"></i> Mode Terang`;
+      item.classList.add("theme-btn-active");
+    } else {
+      // Jadi Light
+      item.innerHTML = `<i data-feather="moon"></i> Mode Gelap`;
+      item.classList.remove("theme-btn-active");
+    }
+    feather.replace();
+  }
+});
