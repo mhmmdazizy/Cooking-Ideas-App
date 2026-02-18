@@ -72,14 +72,12 @@
         <div class="masonry-grid" id="menu-container"></div>
       </section>
 
-      <section id="favorit" class="page center-msg">
-        <div style="text-align: center">
-          <i
-            data-feather="heart"
-            style="width: 40px; height: 40px; color: #ddd; margin-bottom: 10px"
-          ></i>
-          <p>Belum ada resep favorit.</p>
+      <section id="favorit" class="page">
+        <div class="section-title">
+          <h2>Favoritku</h2>
+          <p>Resep yang kamu simpan.</p>
         </div>
+        <div class="masonry-grid" id="favorit-container"></div>
       </section>
 
       <section id="profile-page" class="page profile-container">
@@ -194,7 +192,10 @@
     <div id="info-popup" class="popup-overlay">
       <div class="popup-card">
         <div class="popup-header">
-          <h3 id="popup-title">Info</h3>
+          <h3 style="display: flex; align-items: center; gap: 10px">
+            <i id="popup-icon"></i>
+            <span id="popup-title">Info</span>
+          </h3>
           <button class="close-popup" onclick="closePopup()">
             <i data-feather="x"></i>
           </button>

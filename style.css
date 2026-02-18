@@ -635,3 +635,55 @@ header {
   font-weight: bold;
   font-size: 20px;
 }
+
+/* --- STYLE TAMBAHAN --- */
+
+/* 1. Theme Toggle Button */
+.theme-btn-active {
+  background-color: var(--text); /* Warna kontras */
+  color: var(--bg);
+  transition: all 0.3s;
+}
+
+/* 2. Favorite Button on Card */
+.card-item {
+  position: relative;
+} /* Penting agar tombol fav diam di dalam card */
+
+.fav-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10; /* Supaya di atas gambar */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.fav-btn:active {
+  transform: scale(1.2);
+}
+
+.fav-btn i {
+  width: 16px;
+  height: 16px;
+  color: #ccc; /* Warna default abu */
+  fill: none;
+  transition:
+    color 0.2s,
+    fill 0.2s;
+}
+
+/* Kalo aktif (Favorit) */
+.fav-btn.active i {
+  color: #ff4757;
+  fill: #ff4757; /* Isi warna merah */
+}

@@ -71,6 +71,7 @@ const menus = [
 
 let selectedIngredients = new Set();
 let currentUser = null;
+let favorites = JSON.parse(localStorage.getItem("myFavorites")) || [];
 
 document.addEventListener("DOMContentLoaded", () => {
   renderIngredients();
@@ -98,19 +99,37 @@ function renderIngredients() {
 }
 
 function renderGrid(containerId, data) {
-  document.getElementById(containerId).innerHTML = data
-    .map(
-      (item) => `
+  const container = document.getElementById(containerId);
+
+  // Cek jika data kosong (khusus halaman favorit)
+  if (data.length === 0) {
+    container.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#888; margin-top:50px;">Belum ada item.</p>`;
+    return;
+  }
+
+  container.innerHTML = data
+    .map((item) => {
+      // Cek apakah item ini ada di daftar favorites
+      const isFav = favorites.some((fav) => fav.title === item.title);
+
+      return `
         <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}')">
+            <button class="fav-btn ${isFav ? "active" : ""}" onclick="event.stopPropagation(); toggleFavorite('${item.title}', '${item.tag}', '${item.img}', this)">
+                <i data-feather="heart"></i>
+            </button>
+
             <img src="${item.img}" class="card-thumb" loading="lazy">
             <div class="card-info">
                 <span class="card-tag">${item.tag}</span>
                 <h4>${item.title}</h4>
             </div>
         </div>
-    `,
-    )
+    `;
+    })
     .join("");
+
+  // Jangan lupa render icon baru
+  if (typeof feather !== "undefined") feather.replace();
 }
 
 // Interactions
@@ -151,6 +170,10 @@ window.switchPage = (pageId) => {
   } else {
     header.style.display = "flex";
   }
+  if (pageId === "favorit") {
+    renderGrid("favorit-container", favorites);
+  }
+
   window.scrollTo(0, 0);
 };
 
@@ -168,6 +191,29 @@ window.toggleNotifSheet = () => {
     backdrop.classList.add("active");
     sheet.classList.add("active");
   }
+};
+
+window.toggleFavorite = (title, tag, img, btn) => {
+  const index = favorites.findIndex((f) => f.title === title);
+
+  if (index === -1) {
+    // Tambah ke fav
+    favorites.push({ title, tag, img });
+    btn.classList.add("active");
+  } else {
+    // Hapus dari fav
+    favorites.splice(index, 1);
+    btn.classList.remove("active");
+
+    // Jika sedang di halaman favorit, render ulang agar langsung hilang
+    if (document.getElementById("favorit").classList.contains("active")) {
+      renderGrid("favorit-container", favorites); // Container favorit nanti kita buat
+    }
+  }
+
+  // Simpan ke HP
+  localStorage.setItem("myFavorites", JSON.stringify(favorites));
+  feather.replace();
 };
 
 // --- ARTICLE DETAIL LOGIC ---
@@ -234,38 +280,56 @@ function updateUI(user) {
   }
 }
 
+window.searchFaq = () => {
+  const input = document.getElementById("faq-search");
+  const filter = input.value.toLowerCase();
+  const faqList = document.getElementById("faq-list");
+  const items = faqList.getElementsByClassName("faq-item");
+
+  for (let i = 0; i < items.length; i++) {
+    const question = items[i].getElementsByClassName("faq-question")[0];
+    const txtValue = question.textContent || question.innerText;
+    if (txtValue.toLowerCase().indexOf(filter) > -1) {
+      items[i].style.display = "";
+    } else {
+      items[i].style.display = "none";
+    }
+  }
+};
+
 // --- POPUP LOGIC (UPDATED) ---
 window.openPopup = (type) => {
   let title = "";
   let content = "";
-  const popupBody = document.getElementById("popup-body");
+  let iconName = ""; // Variabel icon baru
 
   if (type === "bantuan") {
     title = "Bantuan & FAQ";
+    iconName = "help-circle"; // Icon
     content = `
-            <input type="text" placeholder="Cari pertanyaan..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px; font-size:14px;">
+            <input type="text" id="faq-search" onkeyup="searchFaq()" placeholder="Cari pertanyaan..." style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px; font-size:14px; box-sizing:border-box;">
             
-            <div class="faq-list">
-                <div class="faq-item" onclick="toggleFaq(this)">
-                    <div class="faq-question">Cara cari resep? <i data-feather="chevron-down"></i></div>
+            <div class="faq-list" id="faq-list">
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">Cara cari resep? <i data-feather="chevron-down"></i></div>
                     <div class="faq-answer">Pilih bahan yang kamu punya di halaman Home, lalu klik tombol Cari Resep.</div>
                 </div>
-                <div class="faq-item" onclick="toggleFaq(this)">
-                    <div class="faq-question">Apakah gratis? <i data-feather="chevron-down"></i></div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">Apakah gratis? <i data-feather="chevron-down"></i></div>
                     <div class="faq-answer">Ya, aplikasi ini 100% gratis untuk digunakan siapa saja.</div>
                 </div>
-                <div class="faq-item" onclick="toggleFaq(this)">
-                    <div class="faq-question">Lupa password? <i data-feather="chevron-down"></i></div>
-                    <div class="faq-answer">Karena login menggunakan Google, silakan reset password akun Google Anda.</div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">Cara simpan resep? <i data-feather="chevron-down"></i></div>
+                    <div class="faq-answer">Klik ikon hati (love) di pojok kanan atas gambar resep.</div>
                 </div>
             </div>
-
             <button class="find-btn" style="margin-top:20px; font-size:14px; padding:10px;">
                 <i data-feather="mail"></i> Hubungi Dukungan
             </button>
         `;
   } else if (type === "privasi") {
     title = "Kebijakan Privasi";
+    iconName = "shield"; // Icon
     content = `
             <div class="privacy-text">
                 <b>Pendahuluan</b><br>
@@ -282,6 +346,7 @@ window.openPopup = (type) => {
         `;
   } else if (type === "tentang") {
     title = "Tentang Aplikasi";
+    iconName = "info"; // Icon
     content = `
             <div style="text-align:center;">
                 <div class="about-logo">MA?</div>
@@ -304,10 +369,14 @@ window.openPopup = (type) => {
         `;
   }
 
+  // Update Judul & Icon
   document.getElementById("popup-title").innerText = title;
-  popupBody.innerHTML = content;
+  // Set Icon secara dinamis
+  document.getElementById("popup-icon").setAttribute("data-feather", iconName);
+
+  document.getElementById("popup-body").innerHTML = content;
   document.getElementById("info-popup").classList.add("active");
-  feather.replace(); // Render icon baru
+  feather.replace();
 };
 
 // Fungsi Toggle Accordion FAQ
@@ -320,7 +389,36 @@ window.resetData = () => {
   if (confirm("Reset data?")) location.reload();
 };
 window.toggleTheme = () => {
-  if (document.body.getAttribute("data-theme") === "dark")
-    document.body.removeAttribute("data-theme");
-  else document.body.setAttribute("data-theme", "dark");
+  const body = document.body;
+  const isDark = body.getAttribute("data-theme") === "dark";
+
+  // Logic ganti tema
+  if (isDark) {
+    body.removeAttribute("data-theme");
+  } else {
+    body.setAttribute("data-theme", "dark");
+  }
+
+  // Logic ganti Icon & Teks di Menu Profil secara realtime
+  // Cari elemen menu item tema (kita cari manual lewat text content atau ID)
+  // Tips: Biar gampang, di HTML kasih ID ke div menu tema: <div id="theme-menu-item" ...>
+  // Tapi pake cara querySelector text juga bisa:
+  const themeItems = document.querySelectorAll(".menu-item");
+  themeItems.forEach((item) => {
+    if (
+      item.innerText.includes("Tema Tampilan") ||
+      item.innerText.includes("Mode")
+    ) {
+      if (!isDark) {
+        // Jadi Dark
+        item.innerHTML = `<i data-feather="sun"></i> Mode Terang`;
+        item.classList.add("theme-btn-active");
+      } else {
+        // Jadi Light
+        item.innerHTML = `<i data-feather="moon"></i> Mode Gelap`;
+        item.classList.remove("theme-btn-active");
+      }
+      feather.replace();
+    }
+  });
 };
