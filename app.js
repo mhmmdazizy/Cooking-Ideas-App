@@ -136,7 +136,7 @@ function updateUI_LoggedOut() {
   loginSec.innerHTML = `
         <p>Simpan preferensi dan resep favorit.</p>
         <button class="google-btn" onclick="handleLogin()">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_"G"_logo.svg" alt="G">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="G">
             Masuk dengan Google
         </button>
     `;
@@ -242,4 +242,5 @@ window.resetData = () => {
     location.reload();
   }
 };
+
 
