@@ -8,6 +8,37 @@ const firebaseConfig = {
   appId: "1:376881959519:web:46f75e2c840654b1ba01ea",
 };
 
+// Init Firestore Database (Tanpa Storage)
+const db = firebase.firestore();
+
+auth.onAuthStateChanged((user) => {
+  currentUser = user;
+  updateUI(user);
+
+  // Ambil Data Global (Realtime)
+  db.collection("recipes")
+    .orderBy("createdAt", "desc")
+    .onSnapshot((snapshot) => {
+      myRecipes = [];
+      const globalMenus = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        data.id = doc.id;
+
+        globalMenus.push(data);
+
+        if (currentUser && data.userId === currentUser.uid) {
+          myRecipes.push(data);
+        }
+      });
+
+      // Update UI Slider & Menu Global
+      renderMyRecipes();
+      renderGrid("menu-container", [...menus, ...globalMenus]);
+    });
+});
+
 // Init Firebase
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -351,36 +382,83 @@ window.closeRecipeForm = () => {
 };
 
 // -- FUNGSI SIMPAN RESEP --
-window.saveMyRecipe = () => {
-  if (!currentUser) return;
+// --- LOGIC BARU: SIMPAN GAMBAR SEBAGAI TEKS (BASE64) ---
+
+// 1. Fungsi Pembantu: Ubah File Gambar jadi Teks Base64 (Dikecilkan)
+const compressImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        // Kita buat Canvas untuk resize gambar
+        const elem = document.createElement("canvas");
+
+        // Set ukuran maksimal (misal lebar 500px biar ringan)
+        const maxWidth = 500;
+        const scaleFactor = maxWidth / img.width;
+
+        elem.width = maxWidth;
+        elem.height = img.height * scaleFactor;
+
+        const ctx = elem.getContext("2d");
+        ctx.drawImage(img, 0, 0, elem.width, elem.height);
+
+        // Ubah jadi teks JPEG kualitas 70%
+        const dataUrl = elem.toDataURL("image/jpeg", 0.7);
+        resolve(dataUrl);
+      };
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
+
+// 2. Fungsi Simpan Resep (Database Only - No Storage)
+window.saveMyRecipe = async () => {
+  if (!currentUser) return alert("Login dulu!");
 
   const title = document.getElementById("rec-title").value;
   const tag = document.getElementById("rec-tag").value;
-  const img =
-    document.getElementById("rec-img").value || "https://placehold.co/300x200";
   const desc = document.getElementById("rec-desc").value;
-  const index = parseInt(document.getElementById("edit-index").value);
+  const fileInput = document.getElementById("rec-file");
 
+  // Validasi
   if (!title) return alert("Judul wajib diisi!");
+  if (fileInput.files.length === 0) return alert("Wajib pilih foto!");
 
-  const newRecipe = { title, tag, img, desc };
+  const btn = document.querySelector("#recipe-form .find-btn");
+  const oldText = btn.innerText;
+  btn.innerText = "Mengompres Gambar...";
+  btn.disabled = true;
 
-  if (index >= 0) {
-    myRecipes[index] = newRecipe;
-  } else {
-    myRecipes.push(newRecipe);
+  try {
+    // PROSES 1: Kompres Gambar jadi Teks
+    const imageBase64 = await compressImage(fileInput.files[0]);
+
+    // PROSES 2: Simpan Teks tersebut ke Database Firestore
+    // (Firestore gratis menampung teks)
+    await db.collection("recipes").add({
+      userId: currentUser.uid,
+      authorName: currentUser.displayName,
+      authorPhoto: currentUser.photoURL,
+      title: title,
+      tag: tag,
+      desc: desc,
+      img: imageBase64, // Gambar disimpan sebagai string panjang
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    alert("Berhasil! Resep sudah tayang global.");
+    closeRecipeForm();
+  } catch (error) {
+    console.error(error);
+    alert("Gagal: " + error.message);
+  } finally {
+    btn.innerText = oldText;
+    btn.disabled = false;
   }
-
-  localStorage.setItem("recipes_" + currentUser.uid, JSON.stringify(myRecipes));
-
-  // Tutup form (trigger history back)
-  history.back();
-
-  // Render ulang
-  renderMyRecipes();
-  renderGrid("menu-container", [...menus, ...myRecipes]);
-
-  alert("Resep tersimpan!");
 };
 
 // --- 8. LOGIC POPUP INFO/FAQ ---

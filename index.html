@@ -18,6 +18,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   </head>
   <body>
     <header id="main-header">
@@ -316,13 +317,10 @@
           placeholder="PEDAS"
         />
 
-        <label>Link Gambar (URL)</label>
-        <input
-          type="text"
-          id="rec-img"
-          class="form-input"
-          placeholder="https://..."
-        />
+        <label>Upload Foto Masakan</label>
+        <input type="file" id="rec-file" class="form-input" accept="image/*" />
+
+        <input type="hidden" id="rec-img" />
 
         <label>Cara Masak</label>
         <textarea
