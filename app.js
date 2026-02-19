@@ -628,6 +628,67 @@ window.findRecipes = () => {
     resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
+// --- FITUR NOTIFIKASI GLOBAL (FIREBASE) ---
+
+// 1. Ambil memori notif apa saja yang sudah dihapus oleh user ini
+let deletedNotifs = JSON.parse(localStorage.getItem("deletedNotifs")) || [];
+let allNotifs = [];
+
+// 2. Dengarkan data dari koleksi "notifications" di Firebase secara realtime
+db.collection("notifications").orderBy("createdAt", "desc").onSnapshot((snapshot) => {
+    allNotifs = [];
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        data.id = doc.id;
+        allNotifs.push(data);
+    });
+    renderNotifications();
+});
+
+// 3. Render Notifikasi ke Layar
+function renderNotifications() {
+    const container = document.getElementById("notif-list-container");
+    const dot = document.querySelector('.notif-dot'); // Titik merah di icon lonceng
+    if (!container) return;
+
+    // Filter: Hanya tampilkan notif yang ID-nya belum ada di daftar 'deletedNotifs'
+    const visibleNotifs = allNotifs.filter(n => !deletedNotifs.includes(n.id));
+
+    if (visibleNotifs.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:#888; font-size:12px; margin-top:20px;">Belum ada notifikasi baru.</p>`;
+        if(dot) dot.style.display = 'none'; // Sembunyikan titik merah
+        return;
+    }
+
+    if(dot) dot.style.display = 'block'; // Munculkan titik merah karena ada notif
+
+    container.innerHTML = visibleNotifs.map(n => `
+        <div class="notif-item unread">
+            <div class="notif-icon bg-blue" style="background:var(--primary);"><i data-feather="${n.icon || 'bell'}"></i></div>
+            <div style="flex:1;">
+                <b style="font-size:13px;">${n.title}</b>
+                <p style="margin:2px 0 0; font-size:11px; color:var(--text-muted);">${n.desc}</p>
+            </div>
+            <button class="del-notif-btn" onclick="deleteNotif('${n.id}')">
+                <i data-feather="x" style="width:16px; height:16px;"></i>
+            </button>
+        </div>
+    `).join('');
+
+    if (typeof feather !== 'undefined') feather.replace();
+}
+
+// 4. Fungsi Hapus Notifikasi (Hanya di HP user tersebut)
+window.deleteNotif = (notifId) => {
+    // Masukkan ID ke daftar hitam
+    deletedNotifs.push(notifId);
+    
+    // Simpan ke memori HP
+    localStorage.setItem("deletedNotifs", JSON.stringify(deletedNotifs));
+    
+    // Render ulang biar langsung hilang
+    renderNotifications();
+};
 
 
 
