@@ -121,6 +121,7 @@ function renderIngredients() {
 
 function renderGrid(containerId, data) {
   const container = document.getElementById(containerId);
+  if(!container) return;
   if (data.length === 0) {
     container.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#888;">Belum ada item.</p>`;
     return;
@@ -129,20 +130,27 @@ function renderGrid(containerId, data) {
   container.innerHTML = data.map(item => {
     const isFav = favorites.some(f => f.title === item.title);
     const safeDesc = (item.desc || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    
-    // Ambil nama penulis (Kalau kosong, pakai Admin)
     const authorName = item.authorName || "Admin"; 
     
+    // Ambil favCount dari database, kalau kosong berarti 0
+    const favCount = item.favCount || 0;
+    // PENTING: Jika data statis tidak punya ID, kirim string 'undefined'
+    const docId = item.id || 'undefined';
+
     return `
-    <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}')">
-         <button class="fav-btn ${isFav ? "active" : ""}" onclick="event.stopPropagation(); toggleFavorite('${item.title}', '${item.tag}', '${item.img}', this)">
-             <i data-feather="heart"></i>
-         </button>
+    <div class="card-item menu-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}')">
+         
+         <div class="fav-container">
+             <button class="fav-btn ${isFav ? "active" : ""}" onclick="event.stopPropagation(); toggleFavorite('${docId}', '${item.title}', '${item.tag}', '${item.img}', this)">
+                 <i data-feather="heart"></i>
+             </button>
+             <span class="fav-count">${favCount}</span>
+         </div>
+
          <img src="${item.img}" class="card-thumb" loading="lazy">
          <div class="card-info">
              <span class="card-tag">${item.tag}</span>
-             <h4>${item.title}</h4>
-             <div class="card-author" style="font-size:10px; color:#888; margin-top:5px; display:flex; gap:5px; align-items:center;">
+             <h4 class="menu-title">${item.title}</h4> <div class="card-author" style="font-size:10px; color:#888; margin-top:5px; display:flex; gap:5px; align-items:center;">
                 <i data-feather="user" style="width:10px;"></i> ${authorName}
              </div>
          </div>
@@ -151,6 +159,7 @@ function renderGrid(containerId, data) {
   
   if (typeof feather !== "undefined") feather.replace();
 }
+
 
 
 function renderMyRecipes() {
@@ -164,13 +173,19 @@ function renderMyRecipes() {
 
   el.innerHTML = myRecipes.map((item, index) => {
     const safeDesc = (item.desc || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    const authorName = item.authorName || "Saya"; // Atau nama user
+    const authorName = item.authorName || "Saya";
 
     return `
     <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}')">
+        
         <button class="edit-btn" onclick="event.stopPropagation(); openRecipeForm(${index})">
             <i data-feather="edit-2" style="width:12px; height:12px;"></i>
         </button>
+        
+        <button class="del-btn" onclick="event.stopPropagation(); deleteMyRecipe('${item.id}')">
+            <i data-feather="trash-2" style="width:12px; height:12px;"></i>
+        </button>
+
         <img src="${item.img}" loading="lazy">
         <div class="mini-card-info">
             <span class="card-tag" style="font-size:8px;">${item.tag}</span>
@@ -325,21 +340,55 @@ window.toggleNotifSheet = () => {
   }
 };
 
-window.toggleFavorite = (title, tag, img, btn) => {
-  const idx = favorites.findIndex((f) => f.title === title);
-  if (idx === -1) {
-    favorites.push({ title, tag, img });
-    btn.classList.add("active");
-  } else {
-    favorites.splice(idx, 1);
-    btn.classList.remove("active");
-  }
+// Perhatikan penambahan param 'id' di awal
+window.toggleFavorite = (id, title, tag, img, btn) => {
+  const idx = favorites.findIndex(f => f.title === title);
+  
+  // Tangkap elemen counter angka di bawah icon love
+  const countSpan = btn.parentElement.querySelector('.fav-count');
+  let currentCount = parseInt(countSpan.innerText) || 0;
 
-  if (document.getElementById("favorit").classList.contains("active")) {
-    renderGrid("favorit-container", favorites);
+  if (idx === -1) { 
+      // JIKA DI-FAVORITKAN
+      favorites.push({ id, title, tag, img }); 
+      btn.classList.add("active"); 
+      
+      // Update UI lokal
+      currentCount++;
+      countSpan.innerText = currentCount;
+
+      // Update Database Firebase (Jika data dari cloud)
+      if (id !== 'undefined') {
+          db.collection("recipes").doc(id).update({
+              favCount: firebase.firestore.FieldValue.increment(1)
+          }).catch(err => console.error(err));
+      }
+  } else { 
+      // JIKA DI-UNFAVORITKAN
+      favorites.splice(idx, 1); 
+      btn.classList.remove("active"); 
+      
+      // Update UI lokal
+      currentCount = Math.max(0, currentCount - 1);
+      countSpan.innerText = currentCount;
+
+      // Update Database Firebase
+      if (id !== 'undefined') {
+          db.collection("recipes").doc(id).update({
+              favCount: firebase.firestore.FieldValue.increment(-1)
+          }).catch(err => console.error(err));
+      }
   }
+  
+  // Update tampilan di halaman favorit
+  if (document.getElementById("favorit").classList.contains("active")) {
+      renderGrid("favorit-container", favorites);
+  }
+  
   localStorage.setItem("myFavorites", JSON.stringify(favorites));
+  if (typeof feather !== "undefined") feather.replace();
 };
+
 
 window.toggleTheme = () => {
   const body = document.body;
@@ -474,3 +523,42 @@ function updateUI(user) {
     btn.innerHTML = `<button class="login-google-btn" onclick="auth.signInWithPopup(provider)">Login Google</button>`;
   }
 }
+
+// --- FITUR HAPUS RESEPKU ---
+window.deleteMyRecipe = async (docId) => {
+    if (!docId || docId === 'undefined') return alert("Data error!");
+    
+    const confirmDelete = confirm("Yakin ingin menghapus resep ini secara permanen?");
+    if (confirmDelete) {
+        try {
+            await db.collection("recipes").doc(docId).delete();
+            alert("Resep berhasil dihapus!");
+            // Tidak perlu panggil render ulang manual, karena .onSnapshot di atas otomatis mendeteksi perubahan database.
+        } catch (error) {
+            console.error("Gagal hapus:", error);
+            alert("Gagal menghapus: " + error.message);
+        }
+    }
+};
+
+// --- FITUR SEARCH MENU ---
+window.searchMenu = () => {
+    const input = document.getElementById("menu-search");
+    if (!input) return;
+    
+    const filter = input.value.toLowerCase();
+    // Cari semua elemen card di dalam menu container
+    const cards = document.querySelectorAll("#menu-container .menu-card");
+
+    cards.forEach(card => {
+        // Cari judulnya
+        const titleText = card.querySelector(".menu-title").innerText.toLowerCase();
+        // Sembunyikan kalau gak cocok
+        if (titleText.indexOf(filter) > -1) {
+            card.style.display = "";
+        } else {
+            card.style.display = "none";
+        }
+    });
+};
+
