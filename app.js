@@ -111,7 +111,7 @@ function renderGrid(containerId, data) {
   
   container.innerHTML = data.map(item => {
     const isFav = favorites.some(f => f.title === item.title);
-    const safeDesc = (item.desc || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const safeDesc = (item.desc || "").replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '<br>').replace(/\r/g, '');
     const authorName = item.authorName || "Admin"; 
     const favCount = item.favCount || 0;
     const docId = item.id || 'undefined';
@@ -205,7 +205,7 @@ function renderMyRecipes() {
   }
 
   el.innerHTML = myRecipes.map((item, index) => {
-    const safeDesc = (item.desc || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const safeDesc = (item.desc || "").replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '<br>').replace(/\r/g, '');
     const authorName = item.authorName || "Saya";
 
     return `
@@ -576,6 +576,7 @@ window.shareArticle = () => {
         alert(`Bagikan resep ini ke temanmu!\n\n${shareText}\n${url}`);
     }
 };
+
 
 
 
