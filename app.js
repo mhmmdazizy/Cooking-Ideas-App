@@ -589,6 +589,33 @@ window.searchGrid = (inputId, containerId) => {
     });
 };
 
+// --- FITUR SHARE NATIVE ---
+window.shareArticle = () => {
+    // Ambil judul resep yang sedang dibuka
+    const title = document.getElementById("detail-title").innerText;
+    const url = window.location.href; // Link website kamu
+    
+    // Teks pesan yang akan dikirim
+    const shareText = `Coba deh resep "${title}" ini! Cari resep praktis lainnya di aplikasi Masak Apa?`;
+
+    // Cek apakah HP/Browser mendukung fitur Share Native
+    if (navigator.share) {
+        navigator.share({
+            title: title,
+            text: shareText,
+            url: url
+        }).then(() => {
+            console.log('Berhasil membagikan resep!');
+        }).catch((error) => {
+            console.log('Batal membagikan:', error);
+        });
+    } else {
+        // Fallback untuk browser laptop/jadul yang gak support
+        alert(`Bagikan resep ini ke temanmu!\n\n${shareText}\n${url}`);
+    }
+};
+
+
 
 
 
