@@ -224,25 +224,15 @@
     </main>
 
     <div id="notif-sheet" class="bottom-sheet">
-      <div class="sheet-handle"></div>
-      <h3>Notifikasi</h3>
-      <div class="notif-list">
-        <div class="notif-item unread">
-          <div class="notif-icon bg-blue"><i data-feather="zap"></i></div>
-          <div>
-            <b>Resep Baru!</b>
-            <p>Cara bikin Seblak Ceker.</p>
-          </div>
-        </div>
-        <div class="notif-item">
-          <div class="notif-icon bg-green"><i data-feather="check"></i></div>
-          <div>
-            <b>Akun Berhasil</b>
-            <p>Profil kamu sudah aktif.</p>
-          </div>
-        </div>
-      </div>
+    <div class="sheet-handle"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3 style="margin:0;">Notifikasi</h3>
     </div>
+    
+    <div class="notif-list" id="notif-list-container">
+        <p style="text-align:center; color:#888; font-size:12px; margin-top:20px;">Memuat notifikasi...</p>
+    </div>
+</div>
     <div
       id="sheet-backdrop"
       class="backdrop"
@@ -365,6 +355,7 @@
     <script src="app.js"></script>
   </body>
 </html>
+
 
 
 
