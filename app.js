@@ -494,27 +494,37 @@ function renderMyRecipes() {
 }
 
 // 2. Buka Form (Mode Tambah atau Edit)
+// --- PERBAIKAN FUNGSI TAMBAH RESEP ---
+
 window.openRecipeForm = (index = -1) => {
   const overlay = document.getElementById("recipe-form");
 
-  if (index >= 0) {
-    // Mode Edit: Isi form dengan data lama
+  // Reset form value
+  document.getElementById("rec-title").value = "";
+  document.getElementById("rec-tag").value = "";
+  document.getElementById("rec-img").value = "";
+  document.getElementById("rec-desc").value = "";
+  document.getElementById("edit-index").value = index;
+
+  // Jika Mode Edit (Index >= 0), isi form
+  if (index >= 0 && myRecipes[index]) {
     const item = myRecipes[index];
     document.getElementById("rec-title").value = item.title;
     document.getElementById("rec-tag").value = item.tag;
     document.getElementById("rec-img").value = item.img;
-    document.getElementById("rec-desc").value = item.desc || ""; // Isi deskripsi
-    document.getElementById("edit-index").value = index;
-  } else {
-    // Mode Tambah: Kosongkan form
-    document.getElementById("rec-title").value = "";
-    document.getElementById("rec-tag").value = "";
-    document.getElementById("rec-img").value = "";
-    document.getElementById("rec-desc").value = "";
-    document.getElementById("edit-index").value = "-1";
+    document.getElementById("rec-desc").value = item.desc || "";
   }
 
-  overlay.style.display = "flex"; // Tampilkan modal
+  // TAMPILKAN MODAL
+  overlay.style.display = "flex";
+
+  // Push History untuk Back Button
+  history.pushState({ view: "form" }, null, "");
+};
+
+// Fungsi Tutup Form (Panggil history back)
+window.closeRecipeForm = () => {
+  history.back();
 };
 
 // 3. Simpan Resep
@@ -560,4 +570,52 @@ window.saveMyRecipe = () => {
 
 window.closeRecipeForm = () => {
   document.getElementById("recipe-form").style.display = "none";
+};
+
+// --- LOGIC TOMBOL BACK HP ---
+
+// 1. Listen tombol Back
+window.onpopstate = (event) => {
+  const articleView = document.getElementById("article-view");
+  const recipeForm = document.getElementById("recipe-form");
+  const infoPopup = document.getElementById("info-popup");
+
+  // Cek apa yang sedang terbuka, lalu tutup
+  if (articleView.classList.contains("active")) {
+    articleView.classList.remove("active");
+  } else if (recipeForm && recipeForm.style.display === "flex") {
+    recipeForm.style.display = "none";
+  } else if (infoPopup && infoPopup.classList.contains("active")) {
+    infoPopup.classList.remove("active");
+  }
+};
+
+// 2. Update fungsi openArticle yang lama (TIMPA FUNGSI INI)
+// Agar saat dibuka, dia nambah history baru
+window.openArticle = (title, tag, img, desc = null) => {
+  document.getElementById("detail-title").innerText = title;
+  document.getElementById("detail-category").innerText = tag;
+  document.getElementById("detail-image").style.backgroundImage =
+    `url('${img}')`;
+
+  // Logic isi konten (sama seperti sebelumnya)
+  let contentHTML = "";
+  if (desc) {
+    contentHTML = `<p>${desc.replace(/\n/g, "<br>")}</p>`;
+  } else {
+    contentHTML = `<p>Lorem ipsum dolor sit amet...</p><p>Deskripsi dummy untuk artikel ini.</p>`;
+  }
+  document.getElementById("detail-desc").innerHTML = contentHTML;
+
+  // TAMPILKAN
+  document.getElementById("article-view").classList.add("active");
+
+  // PUSH HISTORY (Ini kuncinya agar tombol back berfungsi)
+  history.pushState({ view: "article" }, null, "");
+};
+
+// 3. Update fungsi closeArticle (TIMPA FUNGSI INI)
+window.closeArticle = () => {
+  // Kita panggil history.back() agar trigger onpopstate di atas
+  history.back();
 };
