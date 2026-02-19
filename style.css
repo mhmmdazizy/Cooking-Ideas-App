@@ -817,6 +817,7 @@ header {
   gap: 4px;
 }
 
+
 /* --- FITUR SEARCH MENU --- */
 .search-box {
     display: flex; align-items: center; background: var(--surface);
@@ -841,4 +842,29 @@ header {
     background: rgba(0,0,0,0.5); padding: 2px 6px; 
     border-radius: 10px; margin-top: 4px; font-weight: bold;
     backdrop-filter: blur(2px);
+}
+/* --- TOMBOL HAPUS NOTIFIKASI --- */
+.notif-item {
+    position: relative;
+    padding-right: 30px; /* Beri ruang agar teks tidak nabrak tombol silang */
+}
+
+.del-notif-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.del-notif-btn:active {
+    color: var(--primary);
 }
