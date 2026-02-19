@@ -58,11 +58,16 @@
       </section>
 
       <section id="explore" class="page">
-        <div class="section-title">
-          <h2>Jelajahi Tips</h2>
-          <p>Artikel & lifehack dapur terbaru.</p>
-        </div>
-        <div class="masonry-grid" id="explore-container"></div>
+        <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <div>
+        <h2 style="margin:0;">Jelajahi Tips</h2>
+        <p style="margin:0; font-size:12px; color:var(--text-muted);">Artikel & lifehack dapur terbaru.</p>
+    </div>
+    <div class="search-box">
+        <i data-feather="search" style="width:16px; height:16px; color:var(--text-muted);"></i>
+        <input type="text" id="explore-search" onkeyup="searchGrid('explore-search', 'explore-container')" placeholder="Cari artikel...">
+    </div>
+</div>
       </section>
 
       <section id="menu-page" class="page">
@@ -73,7 +78,8 @@
     </div>
     <div class="search-box">
         <i data-feather="search" style="width:16px; height:16px; color:var(--text-muted);"></i>
-        <input type="text" id="menu-search" onkeyup="searchMenu()" placeholder="Cari resep...">
+        <input type="text" id="menu-search" onkeyup="searchGrid('menu-search', 'menu-container')" placeholder="Cari resep...">
+
     </div>
 </div>
 
@@ -81,11 +87,17 @@
       </section>
 
       <section id="favorit" class="page">
-        <div class="section-title">
-          <h2>Favoritku</h2>
-          <p>Resep yang kamu simpan.</p>
-        </div>
-        <div class="masonry-grid" id="favorit-container"></div>
+        <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <div>
+        <h2 style="margin:0;">Favoritku</h2>
+        <p style="margin:0; font-size:12px; color:var(--text-muted);">Resep yang kamu simpan.</p>
+    </div>
+    <div class="search-box">
+        <i data-feather="search" style="width:16px; height:16px; color:var(--text-muted);"></i>
+        <input type="text" id="favorit-search" onkeyup="searchGrid('favorit-search', 'favorit-container')" placeholder="Cari favorit...">
+    </div>
+</div>
+
       </section>
 
       <section id="profile-page" class="page profile-container">
