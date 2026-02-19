@@ -120,24 +120,24 @@ function renderIngredients() {
 }
 
 function renderGrid(containerId, data) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-
+  const container = document.getElementById(containerId);
   if (data.length === 0) {
-    el.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#888;">Belum ada item.</p>`;
+    container.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#888; margin-top:20px;">Belum ada item.</p>`;
     return;
   }
 
-  el.innerHTML = data
+  container.innerHTML = data
     .map((item) => {
-      const isFav = favorites.some((f) => f.title === item.title);
-      // Amanin tanda kutip biar gak error onclick
+      const isFav = favorites.some((fav) => fav.title === item.title);
       const safeDesc = (item.desc || "")
         .replace(/'/g, "\\'")
         .replace(/"/g, "&quot;");
 
+      // Tentukan Nama Penulis (Jika dari user pakai authorName, jika statis pakai Admin)
+      const author = item.authorName || "Admin";
+
       return `
-    <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}')">
+      <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}')">
          <button class="fav-btn ${isFav ? "active" : ""}" onclick="event.stopPropagation(); toggleFavorite('${item.title}', '${item.tag}', '${item.img}', this)">
              <i data-feather="heart"></i>
          </button>
@@ -145,8 +145,10 @@ function renderGrid(containerId, data) {
          <div class="card-info">
              <span class="card-tag">${item.tag}</span>
              <h4>${item.title}</h4>
+             <div class="card-author"><i data-feather="user" style="width:10px; height:10px;"></i> ${author}</div>
          </div>
-    </div>`;
+      </div>
+  `;
     })
     .join("");
 
@@ -215,35 +217,63 @@ window.saveMyRecipe = async () => {
   const tag = document.getElementById("rec-tag").value;
   const desc = document.getElementById("rec-desc").value;
   const fileInput = document.getElementById("rec-file");
+  const editId = document.getElementById("edit-id").value; // Ambil ID jika ada
 
-  if (!title) return alert("Judul wajib!");
-  if (fileInput.files.length === 0) return alert("Wajib foto!");
+  if (!title) return alert("Judul wajib diisi!");
+
+  // Validasi Foto: Wajib jika Buat Baru, Opsional jika Edit
+  if (!editId && fileInput.files.length === 0)
+    return alert("Wajib pilih foto!");
 
   const btn = document.querySelector("#recipe-form .find-btn");
-  btn.innerText = "Mengompres...";
+  const originalText = btn.innerText;
+  btn.innerText = "Memproses...";
   btn.disabled = true;
 
   try {
-    const imageBase64 = await compressImage(fileInput.files[0]);
+    let imageBase64 = null;
 
-    await db.collection("recipes").add({
+    // Cek jika user upload foto baru
+    if (fileInput.files.length > 0) {
+      btn.innerText = "Mengompres Gambar...";
+      imageBase64 = await compressImage(fileInput.files[0]);
+    }
+
+    const recipeData = {
       userId: currentUser.uid,
-      authorName: currentUser.displayName,
+      authorName: currentUser.displayName, // Update nama penulis sesuai akun Google
       authorPhoto: currentUser.photoURL,
       title: title,
       tag: tag,
       desc: desc,
-      img: imageBase64,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    };
 
-    alert("Berhasil!");
+    // Jika ada gambar baru, masukkan. Jika tidak, jangan timpa yg lama.
+    if (imageBase64) {
+      recipeData.img = imageBase64;
+    }
+
+    if (editId) {
+      // MODE EDIT (Update Data yang ada)
+      await db.collection("recipes").doc(editId).update(recipeData);
+      alert("Resep berhasil diperbarui!");
+    } else {
+      // MODE BUAT BARU
+      recipeData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      // Pastikan img ada untuk data baru
+      if (!recipeData.img) throw new Error("Gambar wajib untuk resep baru");
+
+      await db.collection("recipes").add(recipeData);
+      alert("Resep berhasil dipublish!");
+    }
+
     closeRecipeForm();
   } catch (error) {
     console.error(error);
     alert("Gagal: " + error.message);
   } finally {
-    btn.innerText = "Simpan";
+    btn.innerText = originalText;
     btn.disabled = false;
   }
 };
@@ -349,13 +379,31 @@ window.openArticle = (title, tag, img, desc) => {
 window.closeArticle = () => history.back();
 
 window.openRecipeForm = (index = -1) => {
-  if (!currentUser) return alert("Login dulu!");
+  if (!currentUser) return alert("Silakan Login Google dulu!");
   const form = document.getElementById("recipe-form");
 
+  // Reset Form Default
   document.getElementById("rec-title").value = "";
   document.getElementById("rec-tag").value = "";
   document.getElementById("rec-desc").value = "";
+  document.getElementById("rec-file").value = ""; // Reset file input
   document.getElementById("edit-index").value = index;
+  document.getElementById("edit-id").value = ""; // Reset ID
+
+  // JUDUL MODAL
+  const titleEl = form.querySelector("h3");
+  if (titleEl)
+    titleEl.innerText = index >= 0 ? "Edit Resep" : "Buat Resep Baru";
+
+  // JIKA MODE EDIT (Index >= 0)
+  if (index >= 0 && myRecipes[index]) {
+    const item = myRecipes[index];
+    document.getElementById("rec-title").value = item.title;
+    document.getElementById("rec-tag").value = item.tag;
+    document.getElementById("rec-desc").value = item.desc || "";
+    // Simpan ID Dokumen Firestore (Penting buat update)
+    document.getElementById("edit-id").value = item.id;
+  }
 
   form.style.display = "flex";
   history.pushState({ modal: "form" }, null, "");

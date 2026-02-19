@@ -688,8 +688,17 @@ header {
   transition: transform 0.2s;
 }
 
-.fav-btn:active {
-  transform: scale(1.2);
+/* Pastikan ini ada di paling bawah */
+.fav-btn.active {
+  border-color: #ff4757; /* Lingkaran merah */
+}
+
+/* Mengubah warna icon di dalamnya */
+.fav-btn.active i,
+.fav-btn.active svg {
+  fill: #ff4757; /* Isi warna merah */
+  color: #ff4757; /* Garis warna merah */
+  stroke: #ff4757; /* Garis warna merah */
 }
 
 .fav-btn i {
@@ -700,12 +709,6 @@ header {
   transition:
     color 0.2s,
     fill 0.2s;
-}
-
-/* Kalo aktif (Favorit) */
-.fav-btn.active i {
-  color: #ff4757;
-  fill: #ff4757; /* Isi warna merah */
 }
 
 /* --- RESEPKU HORIZONTAL SCROLL --- */
@@ -789,4 +792,14 @@ header {
 /* Pastikan Artikel View Paling Atas */
 #article-view {
   z-index: 9998 !important;
+}
+
+/* Style untuk Nama Penulis di Card (Request no 2) */
+.card-author {
+  font-size: 10px;
+  color: #888;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
