@@ -176,22 +176,23 @@ function renderMyRecipes() {
     const authorName = item.authorName || "Saya";
 
     return `
-    <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}')">
-        
-        <button class="edit-btn" onclick="event.stopPropagation(); openRecipeForm(${index})">
-            <i data-feather="edit-2" style="width:12px; height:12px;"></i>
-        </button>
-        
-        <button class="del-btn" onclick="event.stopPropagation(); deleteMyRecipe('${item.id}')">
-            <i data-feather="trash-2" style="width:12px; height:12px;"></i>
-        </button>
+        <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}')">
+            
+            <div class="action-btns">
+                <button class="edit-btn" onclick="event.stopPropagation(); openRecipeForm(${index})">
+                    <i data-feather="edit-2" style="width:12px; height:12px;"></i>
+                </button>
+                <button class="del-btn" onclick="event.stopPropagation(); deleteMyRecipe('${item.id}')">
+                    <i data-feather="trash-2" style="width:12px; height:12px;"></i>
+                </button>
+            </div>
 
-        <img src="${item.img}" loading="lazy">
-        <div class="mini-card-info">
-            <span class="card-tag" style="font-size:8px;">${item.tag}</span>
-            <h4 style="margin-top:4px;">${item.title}</h4>
-        </div>
-    </div>`;
+            <img src="${item.img}" loading="lazy">
+            <div class="mini-card-info">
+                <span class="card-tag" style="font-size:8px;">${item.tag}</span>
+                <h4 style="margin-top:4px;">${item.title}</h4>
+            </div>
+        </div>`;
   }).join("");
   
   if (typeof feather !== "undefined") feather.replace();
@@ -541,24 +542,30 @@ window.deleteMyRecipe = async (docId) => {
     }
 };
 
-// --- FITUR SEARCH MENU ---
-window.searchMenu = () => {
-    const input = document.getElementById("menu-search");
+// --- FITUR SEARCH UNIVERSAL (Bisa dipakai di Menu, Explore, Favorit) ---
+window.searchGrid = (inputId, containerId) => {
+    const input = document.getElementById(inputId);
     if (!input) return;
     
     const filter = input.value.toLowerCase();
-    // Cari semua elemen card di dalam menu container
-    const cards = document.querySelectorAll("#menu-container .menu-card");
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Cari semua kartu di dalam container tersebut
+    const cards = container.querySelectorAll(".card-item");
 
     cards.forEach(card => {
-        // Cari judulnya
-        const titleText = card.querySelector(".menu-title").innerText.toLowerCase();
-        // Sembunyikan kalau gak cocok
-        if (titleText.indexOf(filter) > -1) {
-            card.style.display = "";
-        } else {
-            card.style.display = "none";
+        // Cari elemen H4 (Judulnya)
+        const titleEl = card.querySelector("h4");
+        if (titleEl) {
+            const titleText = titleEl.innerText.toLowerCase();
+            if (titleText.indexOf(filter) > -1) {
+                card.style.display = "";
+            } else {
+                card.style.display = "none";
+            }
         }
     });
 };
+
 
