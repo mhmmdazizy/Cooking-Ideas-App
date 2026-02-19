@@ -119,9 +119,11 @@ function renderIngredients() {
       .join("");
 }
 
+// --- GANTI FUNGSI RENDER GRID ---
 function renderGrid(containerId, data) {
   const container = document.getElementById(containerId);
-  if(!container) return;
+  if(!container) return; // Mencegah error jika wadah belum ada
+
   if (data.length === 0) {
     container.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#888;">Belum ada item.</p>`;
     return;
@@ -131,17 +133,14 @@ function renderGrid(containerId, data) {
     const isFav = favorites.some(f => f.title === item.title);
     const safeDesc = (item.desc || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const authorName = item.authorName || "Admin"; 
-    
-    // Ambil favCount dari database, kalau kosong berarti 0
     const favCount = item.favCount || 0;
-    // PENTING: Jika data statis tidak punya ID, kirim string 'undefined'
     const docId = item.id || 'undefined';
 
     return `
-    <div class="card-item menu-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}')">
+    <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}')">
          
          <div class="fav-container">
-             <button class="fav-btn ${isFav ? "active" : ""}" onclick="event.stopPropagation(); toggleFavorite('${docId}', '${item.title}', '${item.tag}', '${item.img}', this)">
+             <button class="fav-btn ${isFav ? "active" : ""}" onclick="event.stopPropagation(); toggleFavorite('${docId}', '${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}', this)">
                  <i data-feather="heart"></i>
              </button>
              <span class="fav-count">${favCount}</span>
@@ -150,7 +149,8 @@ function renderGrid(containerId, data) {
          <img src="${item.img}" class="card-thumb" loading="lazy">
          <div class="card-info">
              <span class="card-tag">${item.tag}</span>
-             <h4 class="menu-title">${item.title}</h4> <div class="card-author" style="font-size:10px; color:#888; margin-top:5px; display:flex; gap:5px; align-items:center;">
+             <h4 class="menu-title">${item.title}</h4>
+             <div class="card-author" style="font-size:10px; color:#888; margin-top:5px; display:flex; gap:5px; align-items:center;">
                 <i data-feather="user" style="width:10px;"></i> ${authorName}
              </div>
          </div>
@@ -159,6 +159,49 @@ function renderGrid(containerId, data) {
   
   if (typeof feather !== "undefined") feather.replace();
 }
+
+// --- GANTI FUNGSI TOGGLE FAVORITE ---
+window.toggleFavorite = (id, title, tag, img, desc, authorName, btn) => {
+  const idx = favorites.findIndex(f => f.title === title);
+  
+  const countSpan = btn.parentElement.querySelector('.fav-count');
+  // Cek kalau countSpan ada (mencegah error)
+  let currentCount = countSpan ? (parseInt(countSpan.innerText) || 0) : 0;
+
+  if (idx === -1) { 
+      // TAMBAH KE FAVORIT
+      favorites.push({ id, title, tag, img, desc, authorName }); 
+      btn.classList.add("active"); 
+      
+      if(countSpan) countSpan.innerText = currentCount + 1;
+
+      if (id !== 'undefined') {
+          db.collection("recipes").doc(id).update({
+              favCount: firebase.firestore.FieldValue.increment(1)
+          }).catch(err => console.error(err));
+      }
+  } else { 
+      // HAPUS DARI FAVORIT
+      favorites.splice(idx, 1); 
+      btn.classList.remove("active"); 
+      
+      if(countSpan) countSpan.innerText = Math.max(0, currentCount - 1);
+
+      if (id !== 'undefined') {
+          db.collection("recipes").doc(id).update({
+              favCount: firebase.firestore.FieldValue.increment(-1)
+          }).catch(err => console.error(err));
+      }
+  }
+  
+  // Update tampilan di halaman favorit secara realtime
+  if (document.getElementById("favorit").classList.contains("active")) {
+      renderGrid("favorit-container", favorites);
+  }
+  
+  localStorage.setItem("myFavorites", JSON.stringify(favorites));
+  if (typeof feather !== "undefined") feather.replace();
+};
 
 
 
@@ -341,56 +384,6 @@ window.toggleNotifSheet = () => {
   }
 };
 
-// Perhatikan penambahan param 'id' di awal
-window.toggleFavorite = (id, title, tag, img, btn) => {
-  const idx = favorites.findIndex(f => f.title === title);
-  
-  // Tangkap elemen counter angka di bawah icon love
-  const countSpan = btn.parentElement.querySelector('.fav-count');
-  let currentCount = parseInt(countSpan.innerText) || 0;
-
-  if (idx === -1) { 
-      // JIKA DI-FAVORITKAN
-      favorites.push({ id, title, tag, img }); 
-      btn.classList.add("active"); 
-      
-      // Update UI lokal
-      currentCount++;
-      countSpan.innerText = currentCount;
-
-      // Update Database Firebase (Jika data dari cloud)
-      if (id !== 'undefined') {
-          db.collection("recipes").doc(id).update({
-              favCount: firebase.firestore.FieldValue.increment(1)
-          }).catch(err => console.error(err));
-      }
-  } else { 
-      // JIKA DI-UNFAVORITKAN
-      favorites.splice(idx, 1); 
-      btn.classList.remove("active"); 
-      
-      // Update UI lokal
-      currentCount = Math.max(0, currentCount - 1);
-      countSpan.innerText = currentCount;
-
-      // Update Database Firebase
-      if (id !== 'undefined') {
-          db.collection("recipes").doc(id).update({
-              favCount: firebase.firestore.FieldValue.increment(-1)
-          }).catch(err => console.error(err));
-      }
-  }
-  
-  // Update tampilan di halaman favorit
-  if (document.getElementById("favorit").classList.contains("active")) {
-      renderGrid("favorit-container", favorites);
-  }
-  
-  localStorage.setItem("myFavorites", JSON.stringify(favorites));
-  if (typeof feather !== "undefined") feather.replace();
-};
-
-
 window.toggleTheme = () => {
   const body = document.body;
   const isDark = body.getAttribute("data-theme") === "dark";
@@ -567,5 +560,6 @@ window.searchGrid = (inputId, containerId) => {
         }
     });
 };
+
 
 
