@@ -72,6 +72,7 @@ const menus = [
 let selectedIngredients = new Set();
 let currentUser = null;
 let favorites = JSON.parse(localStorage.getItem("myFavorites")) || [];
+let myRecipes = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   renderIngredients();
@@ -82,6 +83,22 @@ document.addEventListener("DOMContentLoaded", () => {
   auth.onAuthStateChanged((user) => {
     currentUser = user;
     updateUI(user);
+
+    if (user) {
+      // Load resep dari LocalStorage berdasarkan UID User
+      const saved = localStorage.getItem("recipes_" + user.uid);
+      myRecipes = saved ? JSON.parse(saved) : [];
+    } else {
+      myRecipes = []; // Kosongkan jika logout
+    }
+
+    // Render ulang "Resepku" di profil
+    renderMyRecipes();
+
+    // GABUNGKAN RESEPKU KE MENU GLOBAL (Request: Masuk ke menu secara global)
+    // Kita gabungkan array menus bawaan + myRecipes
+    const allMenus = [...menus, ...myRecipes];
+    renderGrid("menu-container", allMenus);
   });
 });
 
@@ -113,7 +130,7 @@ function renderGrid(containerId, data) {
       const isFav = favorites.some((fav) => fav.title === item.title);
 
       return `
-        <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}')">
+        <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${item.desc || ""}')"
             <button class="fav-btn ${isFav ? "active" : ""}" onclick="event.stopPropagation(); toggleFavorite('${item.title}', '${item.tag}', '${item.img}', this)">
                 <i data-feather="heart"></i>
             </button>
@@ -216,26 +233,28 @@ window.toggleFavorite = (title, tag, img, btn) => {
   feather.replace();
 };
 
-// --- ARTICLE DETAIL LOGIC ---
-window.openArticle = (title, tag, img) => {
+// Tambahkan parameter 'customDesc' di akhir
+window.openArticle = (title, tag, img, customDesc = null) => {
   document.getElementById("detail-title").innerText = title;
   document.getElementById("detail-category").innerText = tag;
   document.getElementById("detail-image").style.backgroundImage =
     `url('${img}')`;
 
-  // Generate dummy content panjang biar scrollable
-  document.getElementById("detail-desc").innerHTML = `
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Masakan ini sangat cocok untuk keluarga.</p>
-        <p><b>Bahan-bahan:</b><br>Siapkan semua bahan yang segar agar rasa masakan lebih nikmat. Jangan lupa cuci bersih sayuran.</p>
-        <p><b>Cara Membuat:</b><br>1. Panaskan minyak.<br>2. Tumis bumbu hingga harum.<br>3. Masukkan bahan utama.<br>4. Sajikan hangat.</p>
-        <p>Nikmati selagi hangat bersama nasi putih.</p>
-    `;
+  // Jika ada deskripsi kustom (dari resepku), pakai itu. Jika tidak, pakai dummy.
+  let contentHTML = "";
+  if (customDesc) {
+    // Ubah newline (\n) jadi <br> agar rapi
+    contentHTML = `<p>${customDesc.replace(/\n/g, "<br>")}</p>`;
+  } else {
+    // Konten Dummy Default
+    contentHTML = `
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+            <p><b>Bahan & Cara Membuat:</b><br>Silakan kreasikan sesuai selera Anda. Resep ini adalah inspirasi menu harian.</p>
+        `;
+  }
 
+  document.getElementById("detail-desc").innerHTML = contentHTML;
   document.getElementById("article-view").classList.add("active");
-};
-
-window.closeArticle = () => {
-  document.getElementById("article-view").classList.remove("active");
 };
 
 // Login Logic
@@ -443,3 +462,102 @@ themeItems.forEach((item) => {
     feather.replace();
   }
 });
+
+// --- LOGIC RESEPKU ---
+
+// 1. Render Card Horizontal di Profil
+function renderMyRecipes() {
+  const container = document.getElementById("my-recipes-scroll");
+
+  if (myRecipes.length === 0) {
+    container.innerHTML = `<p style="font-size:12px; color:#888; padding:10px;">Belum ada resep buatanmu.</p>`;
+    return;
+  }
+
+  container.innerHTML = myRecipes
+    .map(
+      (item, index) => `
+        <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}')">
+            <button class="edit-btn" onclick="event.stopPropagation(); openRecipeForm(${index})">
+                <i data-feather="edit-2" style="width:12px; height:12px;"></i>
+            </button>
+            <img src="${item.img}" loading="lazy">
+            <div class="mini-card-info">
+                <span class="card-tag" style="font-size:8px;">${item.tag}</span>
+                <h4 style="margin-top:4px;">${item.title}</h4>
+            </div>
+        </div>
+    `,
+    )
+    .join("");
+  feather.replace();
+}
+
+// 2. Buka Form (Mode Tambah atau Edit)
+window.openRecipeForm = (index = -1) => {
+  const overlay = document.getElementById("recipe-form");
+
+  if (index >= 0) {
+    // Mode Edit: Isi form dengan data lama
+    const item = myRecipes[index];
+    document.getElementById("rec-title").value = item.title;
+    document.getElementById("rec-tag").value = item.tag;
+    document.getElementById("rec-img").value = item.img;
+    document.getElementById("rec-desc").value = item.desc || ""; // Isi deskripsi
+    document.getElementById("edit-index").value = index;
+  } else {
+    // Mode Tambah: Kosongkan form
+    document.getElementById("rec-title").value = "";
+    document.getElementById("rec-tag").value = "";
+    document.getElementById("rec-img").value = "";
+    document.getElementById("rec-desc").value = "";
+    document.getElementById("edit-index").value = "-1";
+  }
+
+  overlay.style.display = "flex"; // Tampilkan modal
+};
+
+// 3. Simpan Resep
+window.saveMyRecipe = () => {
+  if (!currentUser) {
+    alert("Silakan login Google dulu untuk menyimpan resep!");
+    return;
+  }
+
+  const title = document.getElementById("rec-title").value;
+  const tag = document.getElementById("rec-tag").value;
+  const img =
+    document.getElementById("rec-img").value ||
+    "https://placehold.co/300x200?text=No+Image";
+  const desc = document.getElementById("rec-desc").value;
+  const index = parseInt(document.getElementById("edit-index").value);
+
+  if (!title) return alert("Judul wajib diisi!");
+
+  const newRecipe = { title, tag, img, desc };
+
+  if (index >= 0) {
+    // Update yang ada
+    myRecipes[index] = newRecipe;
+  } else {
+    // Tambah baru
+    myRecipes.push(newRecipe);
+  }
+
+  // Simpan ke LocalStorage dengan Key UID User
+  localStorage.setItem("recipes_" + currentUser.uid, JSON.stringify(myRecipes));
+
+  // Tutup Form & Refresh UI
+  closeRecipeForm();
+  renderMyRecipes();
+
+  // Refresh Menu Global agar resep baru muncul di tab Menu
+  const allMenus = [...menus, ...myRecipes];
+  renderGrid("menu-container", allMenus);
+
+  alert("Resep berhasil disimpan!");
+};
+
+window.closeRecipeForm = () => {
+  document.getElementById("recipe-form").style.display = "none";
+};
