@@ -61,6 +61,14 @@ let myRecipes = []; // Data dari Cloud
 // --- 3. START APP ---
 document.addEventListener("DOMContentLoaded", () => {
   console.log("App Started...");
+  // Memori lokal akan mengembalikan angka fav menu statis yang sudah di-like
+  favorites.forEach(fav => {
+      const staticMenu = menus.find(m => m.title === fav.title);
+      if (staticMenu) staticMenu.favCount = fav.favCount || 1;
+      
+      const staticArticle = articles.find(a => a.title === fav.title);
+      if (staticArticle) staticArticle.favCount = fav.favCount || 1;
+  });
 
   // Render Data Statis Dulu (Supaya gak kosong)
   renderIngredients();
@@ -76,32 +84,42 @@ document.addEventListener("DOMContentLoaded", () => {
     updateUI(user);
 
     // Ambil Data dari Cloud Firestore (Gratis)
-    db.collection("recipes")
-      .orderBy("createdAt", "desc")
-      .onSnapshot(
-        (snapshot) => {
-          myRecipes = [];
-          const cloudMenus = [];
-
-          snapshot.forEach((doc) => {
+    db.collection("recipes").orderBy("createdAt", "desc").onSnapshot((snapshot) => {
+        myRecipes = [];
+        const cloudMenus = [];
+        
+        snapshot.forEach((doc) => {
             const data = doc.data();
             data.id = doc.id;
             cloudMenus.push(data);
-
+            
             // Filter punya saya
             if (currentUser && data.userId === currentUser.uid) {
-              myRecipes.push(data);
+                myRecipes.push(data);
             }
-          });
 
-          // Render Ulang dengan Data Baru
-          renderMyRecipes();
-          renderGrid("menu-container", [...menus, ...cloudMenus]);
-        },
-        (error) => {
-          console.error("Error loading recipes:", error);
-        },
-      );
+            // --- TAMBAHKAN FIX SINKRONISASI TAB FAVORIT ---
+            // Update angka fav di memori lokal berdasarkan data terbaru dari cloud
+            const favIdx = favorites.findIndex(f => f.title === data.title);
+            if (favIdx !== -1) {
+                favorites[favIdx].favCount = data.favCount || 0;
+            }
+        });
+
+        // Simpan update favCount ke localStorage
+        localStorage.setItem("myFavorites", JSON.stringify(favorites));
+
+        // Render Ulang dengan Data Baru
+        renderMyRecipes();
+        renderGrid("menu-container", [...menus, ...cloudMenus]);
+        
+        // Render ulang menu favorit jika sedang dibuka (biar angkanya ikut update)
+        if (document.getElementById("favorit").classList.contains("active")) {
+            renderGrid("favorit-container", favorites);
+        }
+    }, (error) => {
+        console.error("Error loading recipes:", error);
+    });
   });
 });
 
@@ -160,20 +178,20 @@ function renderGrid(containerId, data) {
   if (typeof feather !== "undefined") feather.replace();
 }
 
-// --- GANTI FUNGSI TOGGLE FAVORITE ---
 window.toggleFavorite = (id, title, tag, img, desc, authorName, btn) => {
   const idx = favorites.findIndex(f => f.title === title);
   
   const countSpan = btn.parentElement.querySelector('.fav-count');
-  // Cek kalau countSpan ada (mencegah error)
   let currentCount = countSpan ? (parseInt(countSpan.innerText) || 0) : 0;
 
   if (idx === -1) { 
-      // TAMBAH KE FAVORIT
-      favorites.push({ id, title, tag, img, desc, authorName }); 
+      // JIKA DI-FAVORITKAN
+      currentCount++;
+      // Simpan favCount ke dalam daftar favorit
+      favorites.push({ id, title, tag, img, desc, authorName, favCount: currentCount }); 
       btn.classList.add("active"); 
       
-      if(countSpan) countSpan.innerText = currentCount + 1;
+      if(countSpan) countSpan.innerText = currentCount;
 
       if (id !== 'undefined') {
           db.collection("recipes").doc(id).update({
@@ -181,11 +199,12 @@ window.toggleFavorite = (id, title, tag, img, desc, authorName, btn) => {
           }).catch(err => console.error(err));
       }
   } else { 
-      // HAPUS DARI FAVORIT
+      // JIKA DI-UNFAVORITKAN
+      currentCount = Math.max(0, currentCount - 1);
       favorites.splice(idx, 1); 
       btn.classList.remove("active"); 
       
-      if(countSpan) countSpan.innerText = Math.max(0, currentCount - 1);
+      if(countSpan) countSpan.innerText = currentCount;
 
       if (id !== 'undefined') {
           db.collection("recipes").doc(id).update({
@@ -194,6 +213,15 @@ window.toggleFavorite = (id, title, tag, img, desc, authorName, btn) => {
       }
   }
   
+  // --- TAMBAHAN FIX UNTUK MENU STATIS (Bawaan Aplikasi) ---
+  // Update angka di memori agar saat direfresh tidak kembali ke 0
+  const staticMenu = menus.find(m => m.title === title);
+  if (staticMenu) staticMenu.favCount = currentCount;
+  
+  const staticArticle = articles.find(a => a.title === title);
+  if (staticArticle) staticArticle.favCount = currentCount;
+  // ---------------------------------------------------------
+
   // Update tampilan di halaman favorit secara realtime
   if (document.getElementById("favorit").classList.contains("active")) {
       renderGrid("favorit-container", favorites);
@@ -560,6 +588,7 @@ window.searchGrid = (inputId, containerId) => {
         }
     });
 };
+
 
 
 
