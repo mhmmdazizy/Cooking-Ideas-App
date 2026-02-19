@@ -66,10 +66,17 @@
       </section>
 
       <section id="menu-page" class="page">
-        <div class="section-title">
-          <h2>Inspirasi Menu</h2>
-          <p>Daftar masakan populer minggu ini.</p>
-        </div>
+        <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <div>
+        <h2 style="margin:0;">Inspirasi Menu</h2>
+        <p style="margin:0; font-size:12px; color:var(--text-muted);">Daftar masakan minggu ini.</p>
+    </div>
+    <div class="search-box">
+        <i data-feather="search" style="width:16px; height:16px; color:var(--text-muted);"></i>
+        <input type="text" id="menu-search" onkeyup="searchMenu()" placeholder="Cari resep...">
+    </div>
+</div>
+
         <div class="masonry-grid" id="menu-container"></div>
       </section>
 
