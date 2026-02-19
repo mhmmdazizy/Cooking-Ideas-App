@@ -14,44 +14,6 @@ const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 const db = firebase.firestore(); // Database Gratis
 
-// --- 2. DATA DUMMY (MENU BAWAAN) ---
-const ingredients = [
-  { id: "telur", name: "Telur", icon: "disc" },
-  { id: "tempe", name: "Tempe", icon: "square" },
-  { id: "tahu", name: "Tahu", icon: "box" },
-  { id: "ayam", name: "Ayam", icon: "gitlab" },
-  { id: "bawang", name: "Bawang", icon: "smile" },
-  { id: "cabe", name: "Cabai", icon: "zap" },
-  { id: "kecap", name: "Kecap", icon: "droplet" },
-  { id: "nasi", name: "Nasi", icon: "loader" },
-];
-
-const menus = [
-  {
-    title: "Nasi Goreng Spesial",
-    tag: "15 MIN",
-    img: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=300&q=80",
-  },
-  {
-    title: "Soto Ayam Kuning",
-    tag: "KUAH",
-    img: "https://images.unsplash.com/photo-1633436375795-12b3b339712f?w=300&q=80",
-  },
-];
-
-const articles = [
-  {
-    title: "Tips Sayur Awet",
-    tag: "TIPS",
-    img: "https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=300&q=80",
-  },
-  {
-    title: "Bumbu Dasar",
-    tag: "HACK",
-    img: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=300&q=80",
-  },
-];
-
 // Variables
 let selectedIngredients = new Set();
 let currentUser = null;
@@ -614,6 +576,7 @@ window.shareArticle = () => {
         alert(`Bagikan resep ini ke temanmu!\n\n${shareText}\n${url}`);
     }
 };
+
 
 
 
