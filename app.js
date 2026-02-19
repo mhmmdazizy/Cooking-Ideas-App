@@ -122,22 +122,19 @@ function renderIngredients() {
 function renderGrid(containerId, data) {
   const container = document.getElementById(containerId);
   if (data.length === 0) {
-    container.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#888; margin-top:20px;">Belum ada item.</p>`;
+    container.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#888;">Belum ada item.</p>`;
     return;
   }
-
-  container.innerHTML = data
-    .map((item) => {
-      const isFav = favorites.some((fav) => fav.title === item.title);
-      const safeDesc = (item.desc || "")
-        .replace(/'/g, "\\'")
-        .replace(/"/g, "&quot;");
-
-      // Tentukan Nama Penulis (Jika dari user pakai authorName, jika statis pakai Admin)
-      const author = item.authorName || "Admin";
-
-      return `
-      <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}')">
+  
+  container.innerHTML = data.map(item => {
+    const isFav = favorites.some(f => f.title === item.title);
+    const safeDesc = (item.desc || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    
+    // Ambil nama penulis (Kalau kosong, pakai Admin)
+    const authorName = item.authorName || "Admin"; 
+    
+    return `
+    <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}')">
          <button class="fav-btn ${isFav ? "active" : ""}" onclick="event.stopPropagation(); toggleFavorite('${item.title}', '${item.tag}', '${item.img}', this)">
              <i data-feather="heart"></i>
          </button>
@@ -145,32 +142,32 @@ function renderGrid(containerId, data) {
          <div class="card-info">
              <span class="card-tag">${item.tag}</span>
              <h4>${item.title}</h4>
-             <div class="card-author"><i data-feather="user" style="width:10px; height:10px;"></i> ${author}</div>
+             <div class="card-author" style="font-size:10px; color:#888; margin-top:5px; display:flex; gap:5px; align-items:center;">
+                <i data-feather="user" style="width:10px;"></i> ${authorName}
+             </div>
          </div>
-      </div>
-  `;
-    })
-    .join("");
-
+    </div>`;
+  }).join("");
+  
   if (typeof feather !== "undefined") feather.replace();
 }
 
+
 function renderMyRecipes() {
   const el = document.getElementById("my-recipes-scroll");
-  if (!el) return;
+  if(!el) return;
 
   if (myRecipes.length === 0) {
     el.innerHTML = `<p style="font-size:12px; color:#888; padding:10px;">Belum ada resep.</p>`;
     return;
   }
 
-  el.innerHTML = myRecipes
-    .map((item, index) => {
-      const safeDesc = (item.desc || "")
-        .replace(/'/g, "\\'")
-        .replace(/"/g, "&quot;");
-      return `
-    <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}')">
+  el.innerHTML = myRecipes.map((item, index) => {
+    const safeDesc = (item.desc || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const authorName = item.authorName || "Saya"; // Atau nama user
+
+    return `
+    <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}')">
         <button class="edit-btn" onclick="event.stopPropagation(); openRecipeForm(${index})">
             <i data-feather="edit-2" style="width:12px; height:12px;"></i>
         </button>
@@ -180,9 +177,8 @@ function renderMyRecipes() {
             <h4 style="margin-top:4px;">${item.title}</h4>
         </div>
     </div>`;
-    })
-    .join("");
-
+  }).join("");
+  
   if (typeof feather !== "undefined") feather.replace();
 }
 
@@ -364,17 +360,22 @@ window.resetData = () => {
 };
 
 // --- 7. MODALS & POPUPS ---
-window.openArticle = (title, tag, img, desc) => {
+// Tambahkan parameter 'author' di akhir (Default: "Admin")
+window.openArticle = (title, tag, img, desc = null, author = "Admin") => {
   document.getElementById("detail-title").innerText = title;
   document.getElementById("detail-category").innerText = tag;
-  document.getElementById("detail-image").style.backgroundImage =
-    `url('${img}')`;
-  document.getElementById("detail-desc").innerHTML = desc
-    ? `<p>${desc.replace(/\n/g, "<br>")}</p>`
-    : `<p>Info tidak tersedia.</p>`;
+  document.getElementById("detail-image").style.backgroundImage = `url('${img}')`;
+  
+  // Update Nama Penulis
+  document.getElementById("detail-author").innerText = author;
+
+  let contentHTML = desc ? `<p>${desc.replace(/\n/g, "<br>")}</p>` : `<p>Tidak ada deskripsi.</p>`;
+  document.getElementById("detail-desc").innerHTML = contentHTML;
+
   document.getElementById("article-view").classList.add("active");
   history.pushState({ modal: "article" }, null, "");
 };
+
 
 window.closeArticle = () => history.back();
 
