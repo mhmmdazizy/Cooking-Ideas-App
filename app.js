@@ -8,43 +8,13 @@ const firebaseConfig = {
   appId: "1:376881959519:web:46f75e2c840654b1ba01ea",
 };
 
-// Init Firestore Database (Tanpa Storage)
-const db = firebase.firestore();
-
-auth.onAuthStateChanged((user) => {
-  currentUser = user;
-  updateUI(user);
-
-  // Ambil Data Global (Realtime)
-  db.collection("recipes")
-    .orderBy("createdAt", "desc")
-    .onSnapshot((snapshot) => {
-      myRecipes = [];
-      const globalMenus = [];
-
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        data.id = doc.id;
-
-        globalMenus.push(data);
-
-        if (currentUser && data.userId === currentUser.uid) {
-          myRecipes.push(data);
-        }
-      });
-
-      // Update UI Slider & Menu Global
-      renderMyRecipes();
-      renderGrid("menu-container", [...menus, ...globalMenus]);
-    });
-});
-
-// Init Firebase
+// Init Firebase & Firestore
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
+const db = firebase.firestore(); // Database Gratis
 
-// --- 2. DATA DUMMY ---
+// --- 2. DATA DUMMY (MENU BAWAAN) ---
 const ingredients = [
   { id: "telur", name: "Telur", icon: "disc" },
   { id: "tempe", name: "Tempe", icon: "square" },
@@ -54,29 +24,6 @@ const ingredients = [
   { id: "cabe", name: "Cabai", icon: "zap" },
   { id: "kecap", name: "Kecap", icon: "droplet" },
   { id: "nasi", name: "Nasi", icon: "loader" },
-];
-
-const articles = [
-  {
-    title: "5 Tips Simpan Sayur",
-    tag: "TIPS",
-    img: "https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=300&q=80",
-  },
-  {
-    title: "Bumbu Dasar Wajib",
-    tag: "HACK",
-    img: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=300&q=80",
-  },
-  {
-    title: "Kenapa Masakan Asin?",
-    tag: "INFO",
-    img: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=300&q=80",
-  },
-  {
-    title: "Alat Masak Anak Kos",
-    tag: "LIST",
-    img: "https://images.unsplash.com/photo-1584620606775-430335b71948?w=300&q=80",
-  },
 ];
 
 const menus = [
@@ -90,81 +37,107 @@ const menus = [
     tag: "KUAH",
     img: "https://images.unsplash.com/photo-1633436375795-12b3b339712f?w=300&q=80",
   },
+];
+
+const articles = [
   {
-    title: "Ayam Bakar Madu",
-    tag: "BAKAR",
-    img: "https://images.unsplash.com/photo-1614398751058-eb2e0bf63e53?w=300&q=80",
+    title: "Tips Sayur Awet",
+    tag: "TIPS",
+    img: "https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=300&q=80",
   },
   {
-    title: "Tumis Kangkung",
-    tag: "SAYUR",
-    img: "https://images.unsplash.com/photo-1566311684307-c255734e9eb0?w=300&q=80",
+    title: "Bumbu Dasar",
+    tag: "HACK",
+    img: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=300&q=80",
   },
 ];
 
-// State Variables
+// Variables
 let selectedIngredients = new Set();
 let currentUser = null;
 let favorites = JSON.parse(localStorage.getItem("myFavorites")) || [];
-let myRecipes = [];
+let myRecipes = []; // Data dari Cloud
 
-// --- 3. EVENT LISTENER UTAMA ---
+// --- 3. START APP ---
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("App Started...");
+
+  // Render Data Statis Dulu (Supaya gak kosong)
   renderIngredients();
   renderGrid("explore-container", articles);
   renderGrid("menu-container", menus);
 
-  // Init Icons
+  // Render Icon (Penting biar gak hilang)
   if (typeof feather !== "undefined") feather.replace();
 
-  // Auth Listener
+  // Cek Login & Load Data Cloud
   auth.onAuthStateChanged((user) => {
     currentUser = user;
     updateUI(user);
 
-    if (user) {
-      const saved = localStorage.getItem("recipes_" + user.uid);
-      myRecipes = saved ? JSON.parse(saved) : [];
-    } else {
-      myRecipes = [];
-    }
+    // Ambil Data dari Cloud Firestore (Gratis)
+    db.collection("recipes")
+      .orderBy("createdAt", "desc")
+      .onSnapshot(
+        (snapshot) => {
+          myRecipes = [];
+          const cloudMenus = [];
 
-    renderMyRecipes();
-    // Gabung menu bawaan + menu user
-    renderGrid("menu-container", [...menus, ...myRecipes]);
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            data.id = doc.id;
+            cloudMenus.push(data);
+
+            // Filter punya saya
+            if (currentUser && data.userId === currentUser.uid) {
+              myRecipes.push(data);
+            }
+          });
+
+          // Render Ulang dengan Data Baru
+          renderMyRecipes();
+          renderGrid("menu-container", [...menus, ...cloudMenus]);
+        },
+        (error) => {
+          console.error("Error loading recipes:", error);
+        },
+      );
   });
 });
 
 // --- 4. RENDER FUNCTIONS ---
 function renderIngredients() {
-  document.getElementById("ingredients-container").innerHTML = ingredients
-    .map(
-      (ing) => `
-        <div class="ing-item" onclick="toggleIng('${ing.id}', this)">
-            <i data-feather="${ing.icon}"></i> ${ing.name}
-        </div>
-    `,
-    )
-    .join("");
+  const el = document.getElementById("ingredients-container");
+  if (el)
+    el.innerHTML = ingredients
+      .map(
+        (ing) => `
+    <div class="ing-item" onclick="toggleIng('${ing.id}', this)">
+        <i data-feather="${ing.icon}"></i> ${ing.name}
+    </div>`,
+      )
+      .join("");
 }
 
 function renderGrid(containerId, data) {
-  const container = document.getElementById(containerId);
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
   if (data.length === 0) {
-    container.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#888; margin-top:20px;">Belum ada item.</p>`;
+    el.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#888;">Belum ada item.</p>`;
     return;
   }
 
-  container.innerHTML = data
+  el.innerHTML = data
     .map((item) => {
-      const isFav = favorites.some((fav) => fav.title === item.title);
-      // Sanitize deskripsi agar tidak error saat dikirim via onclick
+      const isFav = favorites.some((f) => f.title === item.title);
+      // Amanin tanda kutip biar gak error onclick
       const safeDesc = (item.desc || "")
         .replace(/'/g, "\\'")
         .replace(/"/g, "&quot;");
 
       return `
-      <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}')">
+    <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}')">
          <button class="fav-btn ${isFav ? "active" : ""}" onclick="event.stopPropagation(); toggleFavorite('${item.title}', '${item.tag}', '${item.img}', this)">
              <i data-feather="heart"></i>
          </button>
@@ -173,8 +146,7 @@ function renderGrid(containerId, data) {
              <span class="card-tag">${item.tag}</span>
              <h4>${item.title}</h4>
          </div>
-      </div>
-  `;
+    </div>`;
     })
     .join("");
 
@@ -182,38 +154,101 @@ function renderGrid(containerId, data) {
 }
 
 function renderMyRecipes() {
-  const container = document.getElementById("my-recipes-scroll");
+  const el = document.getElementById("my-recipes-scroll");
+  if (!el) return;
+
   if (myRecipes.length === 0) {
-    container.innerHTML = `<p style="font-size:12px; color:#888; padding:10px;">Belum ada resep buatanmu.</p>`;
+    el.innerHTML = `<p style="font-size:12px; color:#888; padding:10px;">Belum ada resep.</p>`;
     return;
   }
 
-  container.innerHTML = myRecipes
+  el.innerHTML = myRecipes
     .map((item, index) => {
       const safeDesc = (item.desc || "")
         .replace(/'/g, "\\'")
         .replace(/"/g, "&quot;");
       return `
-        <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}')">
-            <button class="edit-btn" onclick="event.stopPropagation(); openRecipeForm(${index})">
-                <i data-feather="edit-2" style="width:12px; height:12px;"></i>
-            </button>
-            <img src="${item.img}" loading="lazy">
-            <div class="mini-card-info">
-                <span class="card-tag" style="font-size:8px;">${item.tag}</span>
-                <h4 style="margin-top:4px;">${item.title}</h4>
-            </div>
+    <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}')">
+        <button class="edit-btn" onclick="event.stopPropagation(); openRecipeForm(${index})">
+            <i data-feather="edit-2" style="width:12px; height:12px;"></i>
+        </button>
+        <img src="${item.img}" loading="lazy">
+        <div class="mini-card-info">
+            <span class="card-tag" style="font-size:8px;">${item.tag}</span>
+            <h4 style="margin-top:4px;">${item.title}</h4>
         </div>
-    `;
+    </div>`;
     })
     .join("");
 
   if (typeof feather !== "undefined") feather.replace();
 }
 
-// --- 5. INTERACTION LOGIC ---
+// --- 5. LOGIC SIMPAN RESEP (COMPRESS GAMBAR) ---
+const compressImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const elem = document.createElement("canvas");
+        // Resize ke lebar 500px (Biar ringan di database)
+        const scaleFactor = 500 / img.width;
+        elem.width = 500;
+        elem.height = img.height * scaleFactor;
+        const ctx = elem.getContext("2d");
+        ctx.drawImage(img, 0, 0, elem.width, elem.height);
+        // Kompres JPEG 70%
+        resolve(elem.toDataURL("image/jpeg", 0.7));
+      };
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
 
-// Toggle Bahan
+window.saveMyRecipe = async () => {
+  if (!currentUser) return alert("Login dulu!");
+
+  const title = document.getElementById("rec-title").value;
+  const tag = document.getElementById("rec-tag").value;
+  const desc = document.getElementById("rec-desc").value;
+  const fileInput = document.getElementById("rec-file");
+
+  if (!title) return alert("Judul wajib!");
+  if (fileInput.files.length === 0) return alert("Wajib foto!");
+
+  const btn = document.querySelector("#recipe-form .find-btn");
+  btn.innerText = "Mengompres...";
+  btn.disabled = true;
+
+  try {
+    const imageBase64 = await compressImage(fileInput.files[0]);
+
+    await db.collection("recipes").add({
+      userId: currentUser.uid,
+      authorName: currentUser.displayName,
+      authorPhoto: currentUser.photoURL,
+      title: title,
+      tag: tag,
+      desc: desc,
+      img: imageBase64,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    alert("Berhasil!");
+    closeRecipeForm();
+  } catch (error) {
+    console.error(error);
+    alert("Gagal: " + error.message);
+  } finally {
+    btn.innerText = "Simpan";
+    btn.disabled = false;
+  }
+};
+
+// --- 6. NAVIGASI & UTILS ---
 window.toggleIng = (id, el) => {
   if (selectedIngredients.has(id)) {
     selectedIngredients.delete(id);
@@ -224,307 +259,66 @@ window.toggleIng = (id, el) => {
   }
 };
 
-// Ganti Halaman (Navigasi Bawah)
 window.switchPage = (pageId) => {
   document
     .querySelectorAll(".page")
     .forEach((p) => p.classList.remove("active"));
   document.getElementById(pageId).classList.add("active");
-
   document
     .querySelectorAll(".nav-item")
     .forEach((n) => n.classList.remove("active"));
 
-  let navIndex = 0;
-  if (pageId === "explore") navIndex = 1;
-  if (pageId === "menu-page") navIndex = 2;
-  if (pageId === "favorit") navIndex = 3;
-  if (pageId === "profile-page") navIndex = 4;
+  let idx = 0;
+  if (pageId === "explore") idx = 1;
+  if (pageId === "menu-page") idx = 2;
+  if (pageId === "favorit") idx = 3;
+  if (pageId === "profile-page") idx = 4;
 
-  const navItems = document.querySelectorAll(".nav-item");
-  if (navItems[navIndex]) navItems[navIndex].classList.add("active");
+  const items = document.querySelectorAll(".nav-item");
+  if (items[idx]) items[idx].classList.add("active");
 
-  // Header Logic
   const header = document.getElementById("main-header");
-  if (pageId === "profile-page") {
-    header.style.display = "none";
-  } else {
-    header.style.display = "flex";
-  }
+  header.style.display = pageId === "profile-page" ? "none" : "flex";
 
-  if (pageId === "favorit") {
-    renderGrid("favorit-container", favorites);
-  }
-
+  if (pageId === "favorit") renderGrid("favorit-container", favorites);
   window.scrollTo(0, 0);
 };
 
-// Notifikasi
 window.toggleNotifSheet = () => {
   const sheet = document.getElementById("notif-sheet");
   const backdrop = document.getElementById("sheet-backdrop");
-
   if (sheet.classList.contains("active")) {
     sheet.classList.remove("active");
     backdrop.classList.remove("active");
     setTimeout(() => (backdrop.style.display = "none"), 300);
   } else {
     backdrop.style.display = "block";
-    // Force Reflow
     backdrop.offsetHeight;
     backdrop.classList.add("active");
     sheet.classList.add("active");
   }
 };
 
-// Favorit
 window.toggleFavorite = (title, tag, img, btn) => {
-  const index = favorites.findIndex((f) => f.title === title);
-  if (index === -1) {
+  const idx = favorites.findIndex((f) => f.title === title);
+  if (idx === -1) {
     favorites.push({ title, tag, img });
     btn.classList.add("active");
   } else {
-    favorites.splice(index, 1);
+    favorites.splice(idx, 1);
     btn.classList.remove("active");
-    if (document.getElementById("favorit").classList.contains("active")) {
-      renderGrid("favorit-container", favorites);
-    }
+  }
+
+  if (document.getElementById("favorit").classList.contains("active")) {
+    renderGrid("favorit-container", favorites);
   }
   localStorage.setItem("myFavorites", JSON.stringify(favorites));
-  if (typeof feather !== "undefined") feather.replace();
 };
 
-// --- 6. LOGIC TOMBOL BACK & MODAL (SANGAT PENTING) ---
-
-// Listener Back Button HP (Popstate)
-window.onpopstate = (event) => {
-  const articleView = document.getElementById("article-view");
-  const recipeForm = document.getElementById("recipe-form");
-  const infoPopup = document.getElementById("info-popup");
-
-  // Jika Artikel terbuka -> Tutup
-  if (articleView && articleView.classList.contains("active")) {
-    articleView.classList.remove("active");
-    return;
-  }
-  // Jika Form Resep terbuka -> Tutup
-  if (recipeForm && recipeForm.style.display === "flex") {
-    recipeForm.style.display = "none";
-    return;
-  }
-  // Jika Popup Info terbuka -> Tutup
-  if (infoPopup && infoPopup.classList.contains("active")) {
-    infoPopup.classList.remove("active");
-    return;
-  }
-};
-
-// -- FUNGSI BUKA ARTIKEL --
-window.openArticle = (title, tag, img, desc = null) => {
-  document.getElementById("detail-title").innerText = title;
-  document.getElementById("detail-category").innerText = tag;
-  document.getElementById("detail-image").style.backgroundImage =
-    `url('${img}')`;
-
-  let contentHTML = desc
-    ? `<p>${desc.replace(/\n/g, "<br>")}</p>`
-    : `<p>Tidak ada deskripsi.</p>`;
-  document.getElementById("detail-desc").innerHTML = contentHTML;
-
-  // Tampilkan
-  document.getElementById("article-view").classList.add("active");
-
-  // Push History (Agar tombol back HP jalan)
-  history.pushState({ modal: "article" }, null, "");
-};
-
-// -- FUNGSI TUTUP ARTIKEL (Manual) --
-window.closeArticle = () => {
-  // Panggil history.back() agar trigger onpopstate di atas
-  history.back();
-};
-
-// --- 7. LOGIC FORM RESEPKU ---
-
-// -- FUNGSI BUKA FORM --
-window.openRecipeForm = (index = -1) => {
-  if (!currentUser) {
-    alert("Silakan Login Google dulu untuk menambah resep!");
-    return;
-  }
-
-  // Reset Form
-  document.getElementById("rec-title").value = "";
-  document.getElementById("rec-tag").value = "";
-  document.getElementById("rec-img").value = "";
-  document.getElementById("rec-desc").value = "";
-  document.getElementById("edit-index").value = index;
-
-  if (index >= 0 && myRecipes[index]) {
-    const item = myRecipes[index];
-    document.getElementById("rec-title").value = item.title;
-    document.getElementById("rec-tag").value = item.tag;
-    document.getElementById("rec-img").value = item.img;
-    document.getElementById("rec-desc").value = item.desc || "";
-  }
-
-  // Tampilkan Form
-  const form = document.getElementById("recipe-form");
-  form.style.display = "flex";
-
-  // Push History
-  history.pushState({ modal: "form" }, null, "");
-};
-
-// -- FUNGSI TUTUP FORM --
-window.closeRecipeForm = () => {
-  history.back();
-};
-
-// -- FUNGSI SIMPAN RESEP --
-// --- LOGIC BARU: SIMPAN GAMBAR SEBAGAI TEKS (BASE64) ---
-
-// 1. Fungsi Pembantu: Ubah File Gambar jadi Teks Base64 (Dikecilkan)
-const compressImage = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        // Kita buat Canvas untuk resize gambar
-        const elem = document.createElement("canvas");
-
-        // Set ukuran maksimal (misal lebar 500px biar ringan)
-        const maxWidth = 500;
-        const scaleFactor = maxWidth / img.width;
-
-        elem.width = maxWidth;
-        elem.height = img.height * scaleFactor;
-
-        const ctx = elem.getContext("2d");
-        ctx.drawImage(img, 0, 0, elem.width, elem.height);
-
-        // Ubah jadi teks JPEG kualitas 70%
-        const dataUrl = elem.toDataURL("image/jpeg", 0.7);
-        resolve(dataUrl);
-      };
-    };
-    reader.onerror = (error) => reject(error);
-  });
-};
-
-// 2. Fungsi Simpan Resep (Database Only - No Storage)
-window.saveMyRecipe = async () => {
-  if (!currentUser) return alert("Login dulu!");
-
-  const title = document.getElementById("rec-title").value;
-  const tag = document.getElementById("rec-tag").value;
-  const desc = document.getElementById("rec-desc").value;
-  const fileInput = document.getElementById("rec-file");
-
-  // Validasi
-  if (!title) return alert("Judul wajib diisi!");
-  if (fileInput.files.length === 0) return alert("Wajib pilih foto!");
-
-  const btn = document.querySelector("#recipe-form .find-btn");
-  const oldText = btn.innerText;
-  btn.innerText = "Mengompres Gambar...";
-  btn.disabled = true;
-
-  try {
-    // PROSES 1: Kompres Gambar jadi Teks
-    const imageBase64 = await compressImage(fileInput.files[0]);
-
-    // PROSES 2: Simpan Teks tersebut ke Database Firestore
-    // (Firestore gratis menampung teks)
-    await db.collection("recipes").add({
-      userId: currentUser.uid,
-      authorName: currentUser.displayName,
-      authorPhoto: currentUser.photoURL,
-      title: title,
-      tag: tag,
-      desc: desc,
-      img: imageBase64, // Gambar disimpan sebagai string panjang
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-
-    alert("Berhasil! Resep sudah tayang global.");
-    closeRecipeForm();
-  } catch (error) {
-    console.error(error);
-    alert("Gagal: " + error.message);
-  } finally {
-    btn.innerText = oldText;
-    btn.disabled = false;
-  }
-};
-
-// --- 8. LOGIC POPUP INFO/FAQ ---
-window.openPopup = (type) => {
-  let title = "",
-    content = "",
-    iconName = "info";
-
-  if (type === "bantuan") {
-    title = "Bantuan & FAQ";
-    iconName = "help-circle";
-    content = `
-       <input type="text" id="faq-search" onkeyup="searchFaq()" placeholder="Cari..." style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ddd; border-radius:8px;">
-       <div id="faq-list">
-          <div class="faq-item" onclick="this.classList.toggle('active')">
-             <div class="faq-question">Cara pakai? <i data-feather="chevron-down" style="float:right"></i></div>
-             <div class="faq-answer">Pilih bahan di Home, klik Cari Resep.</div>
-          </div>
-          <div class="faq-item" onclick="this.classList.toggle('active')">
-             <div class="faq-question">Gratis? <i data-feather="chevron-down" style="float:right"></i></div>
-             <div class="faq-answer">Ya, 100% gratis.</div>
-          </div>
-       </div>
-       <button class="find-btn" onclick="window.location.href='mailto:muhammadazizy48@gmail.com'" style="margin-top:20px; width:100%">
-          <i data-feather="mail"></i> Hubungi Kami
-       </button>
-    `;
-  } else if (type === "privasi") {
-    title = "Kebijakan Privasi";
-    iconName = "shield";
-    content = `<p>Kami tidak menyalahgunakan data Anda.</p><button class="find-btn" onclick="closePopup()">Tutup</button>`;
-  } else if (type === "tentang") {
-    title = "Tentang";
-    content = `<div style="text-align:center"><img src="icon.png" width="60"><p>v1.0.0</p></div>`;
-  }
-
-  document.getElementById("popup-title").innerText = title;
-  document.getElementById("popup-icon").setAttribute("data-feather", iconName);
-  document.getElementById("popup-body").innerHTML = content;
-
-  document.getElementById("info-popup").classList.add("active");
-  if (typeof feather !== "undefined") feather.replace();
-
-  // Push History
-  history.pushState({ modal: "popup" }, null, "");
-};
-
-window.closePopup = () => {
-  history.back();
-};
-
-window.searchFaq = () => {
-  const filter = document.getElementById("faq-search").value.toLowerCase();
-  const items = document.getElementsByClassName("faq-item");
-  for (let i = 0; i < items.length; i++) {
-    const txt = items[i].innerText || items[i].textContent;
-    items[i].style.display = txt.toLowerCase().includes(filter) ? "" : "none";
-  }
-};
-
-// --- 9. UTILS (Theme & Reset) ---
 window.toggleTheme = () => {
   const body = document.body;
   const isDark = body.getAttribute("data-theme") === "dark";
   const btn = document.getElementById("theme-btn");
-
   if (isDark) {
     body.removeAttribute("data-theme");
     if (btn) btn.innerHTML = `<i data-feather="moon"></i> Mode Gelap`;
@@ -536,36 +330,98 @@ window.toggleTheme = () => {
 };
 
 window.resetData = () => {
-  if (confirm("Reset data?")) location.reload();
+  if (confirm("Reset?")) location.reload();
 };
 
-// --- AUTH UI ---
+// --- 7. MODALS & POPUPS ---
+window.openArticle = (title, tag, img, desc) => {
+  document.getElementById("detail-title").innerText = title;
+  document.getElementById("detail-category").innerText = tag;
+  document.getElementById("detail-image").style.backgroundImage =
+    `url('${img}')`;
+  document.getElementById("detail-desc").innerHTML = desc
+    ? `<p>${desc.replace(/\n/g, "<br>")}</p>`
+    : `<p>Info tidak tersedia.</p>`;
+  document.getElementById("article-view").classList.add("active");
+  history.pushState({ modal: "article" }, null, "");
+};
+
+window.closeArticle = () => history.back();
+
+window.openRecipeForm = (index = -1) => {
+  if (!currentUser) return alert("Login dulu!");
+  const form = document.getElementById("recipe-form");
+
+  document.getElementById("rec-title").value = "";
+  document.getElementById("rec-tag").value = "";
+  document.getElementById("rec-desc").value = "";
+  document.getElementById("edit-index").value = index;
+
+  form.style.display = "flex";
+  history.pushState({ modal: "form" }, null, "");
+};
+
+window.closeRecipeForm = () => history.back();
+
+window.openPopup = (type) => {
+  let title = "",
+    content = "",
+    icon = "info";
+  if (type === "bantuan") {
+    title = "Bantuan";
+    icon = "help-circle";
+    content = `<div class="faq-item" onclick="this.classList.toggle('active')"><div class="faq-question">Cara pakai?</div><div class="faq-answer">Pilih bahan, cari resep.</div></div><button class="find-btn" onclick="location.href='mailto:muhammadazizy48@gmail.com'" style="margin-top:10px">Kontak Kami</button>`;
+  } else if (type === "privasi") {
+    title = "Privasi";
+    icon = "shield";
+    content = `<p>Data aman.</p><button class="find-btn" onclick="closePopup()">Tutup</button>`;
+  } else if (type === "tentang") {
+    title = "Tentang";
+    content = `<center><img src="icon.png" width="50"><p>v1.0</p></center>`;
+  }
+  document.getElementById("popup-title").innerText = title;
+  document.getElementById("popup-icon").setAttribute("data-feather", icon);
+  document.getElementById("popup-body").innerHTML = content;
+  document.getElementById("info-popup").classList.add("active");
+  if (typeof feather !== "undefined") feather.replace();
+  history.pushState({ modal: "popup" }, null, "");
+};
+window.closePopup = () => history.back();
+
+// Listener Back Button
+window.addEventListener("popstate", () => {
+  const ids = ["recipe-form", "article-view", "info-popup"];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (el.style.display === "flex") el.style.display = "none";
+      el.classList.remove("active");
+    }
+  });
+});
+
+// UI Auth Update
 function updateUI(user) {
-  const googleIcon =
-    "https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg";
+  const btn = document.getElementById("auth-btn-container");
+  if (!btn) return;
+
   if (user) {
     document.getElementById("header-username").innerText =
       user.displayName.split(" ")[0];
     document.getElementById("header-avatar").innerHTML =
       `<img src="${user.photoURL}">`;
-
     document.getElementById("profile-name-large").innerText = user.displayName;
     document.getElementById("profile-email-large").innerText = user.email;
     document.getElementById("profile-avatar-large").innerHTML =
       `<img src="${user.photoURL}">`;
-
-    document.getElementById("auth-btn-container").innerHTML =
-      `<button class="login-google-btn" style="border-color:#fee2e2; color:#b91c1c" onclick="auth.signOut()">Logout</button>`;
+    btn.innerHTML = `<button class="login-google-btn" style="color:red" onclick="auth.signOut()">Logout</button>`;
   } else {
-    document.getElementById("header-username").innerText = "Guest User";
+    document.getElementById("header-username").innerText = "Guest";
     document.getElementById("header-avatar").innerHTML = "G";
-
     document.getElementById("profile-name-large").innerText = "Guest User";
     document.getElementById("profile-email-large").innerText =
-      "Login untuk simpan data";
+      "Login untuk simpan";
     document.getElementById("profile-avatar-large").innerHTML = "G";
-
-    document.getElementById("auth-btn-container").innerHTML =
-      `<button class="login-google-btn" onclick="auth.signInWithPopup(provider)"><img src="${googleIcon}" width="18"> Masuk dengan Google</button>`;
+    btn.innerHTML = `<button class="login-google-btn" onclick="auth.signInWithPopup(provider)">Login Google</button>`;
   }
 }
