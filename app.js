@@ -463,7 +463,7 @@ themeItems.forEach((item) => {
   }
 });
 
-// --- LOGIC RESEPKU ---
+// --- LOGIC RESEPKU (CREATE & RENDER) ---
 
 // 1. Render Card Horizontal di Profil
 function renderMyRecipes() {
@@ -477,7 +477,7 @@ function renderMyRecipes() {
   container.innerHTML = myRecipes
     .map(
       (item, index) => `
-        <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}')">
+        <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${(item.desc || "").replace(/'/g, "\\'")}')">
             <button class="edit-btn" onclick="event.stopPropagation(); openRecipeForm(${index})">
                 <i data-feather="edit-2" style="width:12px; height:12px;"></i>
             </button>
@@ -490,44 +490,11 @@ function renderMyRecipes() {
     `,
     )
     .join("");
+
   feather.replace();
 }
 
-// 2. Buka Form (Mode Tambah atau Edit)
-// --- PERBAIKAN FUNGSI TAMBAH RESEP ---
-
-window.openRecipeForm = (index = -1) => {
-  const overlay = document.getElementById("recipe-form");
-
-  // Reset form value
-  document.getElementById("rec-title").value = "";
-  document.getElementById("rec-tag").value = "";
-  document.getElementById("rec-img").value = "";
-  document.getElementById("rec-desc").value = "";
-  document.getElementById("edit-index").value = index;
-
-  // Jika Mode Edit (Index >= 0), isi form
-  if (index >= 0 && myRecipes[index]) {
-    const item = myRecipes[index];
-    document.getElementById("rec-title").value = item.title;
-    document.getElementById("rec-tag").value = item.tag;
-    document.getElementById("rec-img").value = item.img;
-    document.getElementById("rec-desc").value = item.desc || "";
-  }
-
-  // TAMPILKAN MODAL
-  overlay.style.display = "flex";
-
-  // Push History untuk Back Button
-  history.pushState({ view: "form" }, null, "");
-};
-
-// Fungsi Tutup Form (Panggil history back)
-window.closeRecipeForm = () => {
-  history.back();
-};
-
-// 3. Simpan Resep
+// 2. Simpan Resep
 window.saveMyRecipe = () => {
   if (!currentUser) {
     alert("Silakan login Google dulu untuk menyimpan resep!");
@@ -558,7 +525,9 @@ window.saveMyRecipe = () => {
   localStorage.setItem("recipes_" + currentUser.uid, JSON.stringify(myRecipes));
 
   // Tutup Form & Refresh UI
-  closeRecipeForm();
+  // Kita panggil history.back() agar menutup form & memicu popstate
+  history.back();
+
   renderMyRecipes();
 
   // Refresh Menu Global agar resep baru muncul di tab Menu
@@ -568,39 +537,85 @@ window.saveMyRecipe = () => {
   alert("Resep berhasil disimpan!");
 };
 
-window.closeRecipeForm = () => {
-  document.getElementById("recipe-form").style.display = "none";
-};
+// --- PERBAIKAN TOTAL: TOMBOL BACK & NAVIGASI ---
 
-// --- LOGIC TOMBOL BACK HP ---
-
-// 1. Listen tombol Back
-window.onpopstate = (event) => {
-  const articleView = document.getElementById("article-view");
+// 1. Logika Listener Tombol Back HP (Hanya ada SATU ini)
+window.addEventListener("popstate", (event) => {
+  // Cek modal mana yang terbuka
   const recipeForm = document.getElementById("recipe-form");
+  const articleView = document.getElementById("article-view");
   const infoPopup = document.getElementById("info-popup");
 
-  // Cek apa yang sedang terbuka, lalu tutup
-  if (articleView.classList.contains("active")) {
-    articleView.classList.remove("active");
-  } else if (recipeForm && recipeForm.style.display === "flex") {
+  // Jika Form Resep terbuka -> Tutup
+  if (recipeForm && recipeForm.style.display === "flex") {
     recipeForm.style.display = "none";
-  } else if (infoPopup && infoPopup.classList.contains("active")) {
-    infoPopup.classList.remove("active");
+    return;
   }
+
+  // Jika Artikel terbuka -> Tutup
+  if (articleView && articleView.classList.contains("active")) {
+    articleView.classList.remove("active");
+    return;
+  }
+
+  // Jika Popup Info terbuka -> Tutup
+  if (infoPopup && infoPopup.classList.contains("active")) {
+    infoPopup.classList.remove("active");
+    return;
+  }
+});
+
+// 2. Fungsi Buka Form Resep
+window.openRecipeForm = (index = -1) => {
+  // Cek Login Dulu
+  if (!currentUser) {
+    alert("Kamu harus Login Google dulu untuk buat resep!");
+    return;
+  }
+
+  const form = document.getElementById("recipe-form");
+
+  // Reset Form
+  document.getElementById("rec-title").value = "";
+  document.getElementById("rec-tag").value = "";
+  document.getElementById("rec-img").value = "";
+  document.getElementById("rec-desc").value = "";
+  document.getElementById("edit-index").value = index;
+
+  // Jika Edit, isi data lama
+  if (index >= 0 && myRecipes[index]) {
+    const item = myRecipes[index];
+    document.getElementById("rec-title").value = item.title;
+    document.getElementById("rec-tag").value = item.tag;
+    document.getElementById("rec-img").value = item.img;
+    document.getElementById("rec-desc").value = item.desc || "";
+  }
+
+  // Tampilkan Form
+  form.style.display = "flex";
+
+  // Push History agar tombol back HP aktif
+  // Kita beri penanda state 'modal: recipe'
+  history.pushState({ modal: "recipe" }, null, "");
 };
 
-// 2. Update fungsi openArticle yang lama (TIMPA FUNGSI INI)
-// Agar saat dibuka, dia nambah history baru
+// 3. Fungsi Tutup Form (Manual klik tombol X)
+window.closeRecipeForm = () => {
+  // Panggil back(), biarkan listener popstate yang menutup UI
+  history.back();
+};
+
+// 4. Fungsi Buka Artikel
 window.openArticle = (title, tag, img, desc = null) => {
   document.getElementById("detail-title").innerText = title;
   document.getElementById("detail-category").innerText = tag;
   document.getElementById("detail-image").style.backgroundImage =
     `url('${img}')`;
 
-  // Logic isi konten (sama seperti sebelumnya)
+  // Logic isi konten
   let contentHTML = "";
   if (desc) {
+    // Replace newline dengan <br>
     contentHTML = `<p>${desc.replace(/\n/g, "<br>")}</p>`;
   } else {
     contentHTML = `<p>Lorem ipsum dolor sit amet...</p><p>Deskripsi dummy untuk artikel ini.</p>`;
@@ -611,11 +626,11 @@ window.openArticle = (title, tag, img, desc = null) => {
   document.getElementById("article-view").classList.add("active");
 
   // PUSH HISTORY (Ini kuncinya agar tombol back berfungsi)
-  history.pushState({ view: "article" }, null, "");
+  history.pushState({ modal: "article" }, null, "");
 };
 
-// 3. Update fungsi closeArticle (TIMPA FUNGSI INI)
+// 5. Fungsi Tutup Artikel (Manual klik tombol back di layar)
 window.closeArticle = () => {
-  // Kita panggil history.back() agar trigger onpopstate di atas
+  // Panggil back(), biarkan listener popstate yang menutup UI
   history.back();
 };

@@ -774,3 +774,15 @@ header {
   box-sizing: border-box;
   font-family: inherit;
 }
+
+/* Pastikan Modal Form ada di paling depan */
+#recipe-form {
+  z-index: 9999 !important; /* Paksa paling atas */
+  background: rgba(0, 0, 0, 0.8); /* Gelapkan background biar fokus */
+}
+
+/* Pastikan tombol tambah resep bisa diklik */
+.my-recipes-section button {
+  position: relative;
+  z-index: 10;
+}

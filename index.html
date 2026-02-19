@@ -297,30 +297,30 @@
     >
       <div class="popup-card">
         <div class="popup-header">
-          <h3>Buat Resep</h3>
+          <h3>Buat Resep Baru</h3>
           <button class="close-popup" onclick="closeRecipeForm()">
             <i data-feather="x"></i>
           </button>
         </div>
 
         <input type="hidden" id="edit-index" />
-        <label style="font-size: 12px; font-weight: bold">Judul Resep</label>
+        <label>Nama Masakan</label>
         <input
           type="text"
           id="rec-title"
           class="form-input"
-          placeholder="Contoh: Nasi Goreng Gila"
+          placeholder="Nasi Goreng..."
         />
 
-        <label style="font-size: 12px; font-weight: bold">Tag / Kategori</label>
+        <label>Kategori (Pedas/Manis/Kuah)</label>
         <input
           type="text"
           id="rec-tag"
           class="form-input"
-          placeholder="Contoh: PEDAS"
+          placeholder="PEDAS"
         />
 
-        <label style="font-size: 12px; font-weight: bold">URL Gambar</label>
+        <label>Link Gambar (URL)</label>
         <input
           type="text"
           id="rec-img"
@@ -328,17 +328,15 @@
           placeholder="https://..."
         />
 
-        <label style="font-size: 12px; font-weight: bold"
-          >Deskripsi / Cara Masak</label
-        >
+        <label>Cara Masak</label>
         <textarea
           id="rec-desc"
           class="form-input"
-          rows="4"
-          placeholder="Tulis bahan dan cara masak di sini..."
+          rows="5"
+          placeholder="Tulis resep di sini..."
         ></textarea>
 
-        <button class="find-btn" onclick="saveMyRecipe()">Simpan Resep</button>
+        <button class="find-btn" onclick="saveMyRecipe()">Simpan</button>
       </div>
     </div>
 
