@@ -1,4 +1,4 @@
-// CONFIG FIREBASE (Paste Config Anda)
+// --- 1. CONFIG FIREBASE (PASTE CONFIG KAMU DI SINI) ---
 const firebaseConfig = {
   apiKey: "AIzaSyBIM86KidwhWLIdQkVv38xfNJUK3pmKmc8",
   authDomain: "cookingideas-2a894.firebaseapp.com",
@@ -7,11 +7,13 @@ const firebaseConfig = {
   messagingSenderId: "376881959519",
   appId: "1:376881959519:web:46f75e2c840654b1ba01ea",
 };
+
+// Init Firebase
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 
-// DATA DUMMY
+// --- 2. DATA DUMMY ---
 const ingredients = [
   { id: "telur", name: "Telur", icon: "disc" },
   { id: "tempe", name: "Tempe", icon: "square" },
@@ -25,12 +27,12 @@ const ingredients = [
 
 const articles = [
   {
-    title: "5 Tips Simpan Sayur Awet",
+    title: "5 Tips Simpan Sayur",
     tag: "TIPS",
     img: "https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=300&q=80",
   },
   {
-    title: "Bumbu Dasar Wajib Punya",
+    title: "Bumbu Dasar Wajib",
     tag: "HACK",
     img: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=300&q=80",
   },
@@ -69,40 +71,40 @@ const menus = [
   },
 ];
 
+// State Variables
 let selectedIngredients = new Set();
 let currentUser = null;
 let favorites = JSON.parse(localStorage.getItem("myFavorites")) || [];
 let myRecipes = [];
 
+// --- 3. EVENT LISTENER UTAMA ---
 document.addEventListener("DOMContentLoaded", () => {
   renderIngredients();
-  renderGrid("explore-container", articles); // Render Explore
-  renderGrid("menu-container", menus); // Render Menu
-  feather.replace();
+  renderGrid("explore-container", articles);
+  renderGrid("menu-container", menus);
 
+  // Init Icons
+  if (typeof feather !== "undefined") feather.replace();
+
+  // Auth Listener
   auth.onAuthStateChanged((user) => {
     currentUser = user;
     updateUI(user);
 
     if (user) {
-      // Load resep dari LocalStorage berdasarkan UID User
       const saved = localStorage.getItem("recipes_" + user.uid);
       myRecipes = saved ? JSON.parse(saved) : [];
     } else {
-      myRecipes = []; // Kosongkan jika logout
+      myRecipes = [];
     }
 
-    // Render ulang "Resepku" di profil
     renderMyRecipes();
-
-    // GABUNGKAN RESEPKU KE MENU GLOBAL (Request: Masuk ke menu secara global)
-    // Kita gabungkan array menus bawaan + myRecipes
-    const allMenus = [...menus, ...myRecipes];
-    renderGrid("menu-container", allMenus);
+    // Gabung menu bawaan + menu user
+    renderGrid("menu-container", [...menus, ...myRecipes]);
   });
 });
 
-// Render Functions
+// --- 4. RENDER FUNCTIONS ---
 function renderIngredients() {
   document.getElementById("ingredients-container").innerHTML = ingredients
     .map(
@@ -117,39 +119,70 @@ function renderIngredients() {
 
 function renderGrid(containerId, data) {
   const container = document.getElementById(containerId);
-
-  // Cek jika data kosong (khusus halaman favorit)
   if (data.length === 0) {
-    container.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#888; margin-top:50px;">Belum ada item.</p>`;
+    container.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#888; margin-top:20px;">Belum ada item.</p>`;
     return;
   }
 
   container.innerHTML = data
     .map((item) => {
-      // Cek apakah item ini ada di daftar favorites
       const isFav = favorites.some((fav) => fav.title === item.title);
+      // Sanitize deskripsi agar tidak error saat dikirim via onclick
+      const safeDesc = (item.desc || "")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, "&quot;");
 
       return `
-        <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${item.desc || ""}')"
-            <button class="fav-btn ${isFav ? "active" : ""}" onclick="event.stopPropagation(); toggleFavorite('${item.title}', '${item.tag}', '${item.img}', this)">
-                <i data-feather="heart"></i>
-            </button>
+      <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}')">
+         <button class="fav-btn ${isFav ? "active" : ""}" onclick="event.stopPropagation(); toggleFavorite('${item.title}', '${item.tag}', '${item.img}', this)">
+             <i data-feather="heart"></i>
+         </button>
+         <img src="${item.img}" class="card-thumb" loading="lazy">
+         <div class="card-info">
+             <span class="card-tag">${item.tag}</span>
+             <h4>${item.title}</h4>
+         </div>
+      </div>
+  `;
+    })
+    .join("");
 
-            <img src="${item.img}" class="card-thumb" loading="lazy">
-            <div class="card-info">
-                <span class="card-tag">${item.tag}</span>
-                <h4>${item.title}</h4>
+  if (typeof feather !== "undefined") feather.replace();
+}
+
+function renderMyRecipes() {
+  const container = document.getElementById("my-recipes-scroll");
+  if (myRecipes.length === 0) {
+    container.innerHTML = `<p style="font-size:12px; color:#888; padding:10px;">Belum ada resep buatanmu.</p>`;
+    return;
+  }
+
+  container.innerHTML = myRecipes
+    .map((item, index) => {
+      const safeDesc = (item.desc || "")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, "&quot;");
+      return `
+        <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}')">
+            <button class="edit-btn" onclick="event.stopPropagation(); openRecipeForm(${index})">
+                <i data-feather="edit-2" style="width:12px; height:12px;"></i>
+            </button>
+            <img src="${item.img}" loading="lazy">
+            <div class="mini-card-info">
+                <span class="card-tag" style="font-size:8px;">${item.tag}</span>
+                <h4 style="margin-top:4px;">${item.title}</h4>
             </div>
         </div>
     `;
     })
     .join("");
 
-  // Jangan lupa render icon baru
   if (typeof feather !== "undefined") feather.replace();
 }
 
-// Interactions
+// --- 5. INTERACTION LOGIC ---
+
+// Toggle Bahan
 window.toggleIng = (id, el) => {
   if (selectedIngredients.has(id)) {
     selectedIngredients.delete(id);
@@ -160,6 +193,7 @@ window.toggleIng = (id, el) => {
   }
 };
 
+// Ganti Halaman (Navigasi Bawah)
 window.switchPage = (pageId) => {
   document
     .querySelectorAll(".page")
@@ -170,23 +204,23 @@ window.switchPage = (pageId) => {
     .querySelectorAll(".nav-item")
     .forEach((n) => n.classList.remove("active"));
 
-  // Highlight Nav yang sesuai
-  let navId = "";
-  if (pageId === "home") navId = 0;
-  else if (pageId === "explore") navId = 1;
-  else if (pageId === "menu-page") navId = 2;
-  else if (pageId === "favorit") navId = 3;
-  else if (pageId === "profile-page") navId = 4;
+  let navIndex = 0;
+  if (pageId === "explore") navIndex = 1;
+  if (pageId === "menu-page") navIndex = 2;
+  if (pageId === "favorit") navIndex = 3;
+  if (pageId === "profile-page") navIndex = 4;
 
-  document.querySelectorAll(".nav-item")[navId].classList.add("active");
+  const navItems = document.querySelectorAll(".nav-item");
+  if (navItems[navIndex]) navItems[navIndex].classList.add("active");
 
-  // Header Logic: Sembunyikan header di halaman Profile agar bersih
+  // Header Logic
   const header = document.getElementById("main-header");
   if (pageId === "profile-page") {
     header.style.display = "none";
   } else {
     header.style.display = "flex";
   }
+
   if (pageId === "favorit") {
     renderGrid("favorit-container", favorites);
   }
@@ -194,386 +228,99 @@ window.switchPage = (pageId) => {
   window.scrollTo(0, 0);
 };
 
-// Notification Sheet
+// Notifikasi
 window.toggleNotifSheet = () => {
   const sheet = document.getElementById("notif-sheet");
   const backdrop = document.getElementById("sheet-backdrop");
+
   if (sheet.classList.contains("active")) {
     sheet.classList.remove("active");
     backdrop.classList.remove("active");
     setTimeout(() => (backdrop.style.display = "none"), 300);
   } else {
     backdrop.style.display = "block";
-    backdrop.offsetHeight; // reflow
+    // Force Reflow
+    backdrop.offsetHeight;
     backdrop.classList.add("active");
     sheet.classList.add("active");
   }
 };
 
+// Favorit
 window.toggleFavorite = (title, tag, img, btn) => {
   const index = favorites.findIndex((f) => f.title === title);
-
   if (index === -1) {
-    // Tambah ke fav
     favorites.push({ title, tag, img });
     btn.classList.add("active");
   } else {
-    // Hapus dari fav
     favorites.splice(index, 1);
     btn.classList.remove("active");
-
-    // Jika sedang di halaman favorit, render ulang agar langsung hilang
     if (document.getElementById("favorit").classList.contains("active")) {
-      renderGrid("favorit-container", favorites); // Container favorit nanti kita buat
+      renderGrid("favorit-container", favorites);
     }
   }
-
-  // Simpan ke HP
   localStorage.setItem("myFavorites", JSON.stringify(favorites));
-  feather.replace();
+  if (typeof feather !== "undefined") feather.replace();
 };
 
-// Tambahkan parameter 'customDesc' di akhir
-window.openArticle = (title, tag, img, customDesc = null) => {
-  document.getElementById("detail-title").innerText = title;
-  document.getElementById("detail-category").innerText = tag;
-  document.getElementById("detail-image").style.backgroundImage =
-    `url('${img}')`;
+// --- 6. LOGIC TOMBOL BACK & MODAL (SANGAT PENTING) ---
 
-  // Jika ada deskripsi kustom (dari resepku), pakai itu. Jika tidak, pakai dummy.
-  let contentHTML = "";
-  if (customDesc) {
-    // Ubah newline (\n) jadi <br> agar rapi
-    contentHTML = `<p>${customDesc.replace(/\n/g, "<br>")}</p>`;
-  } else {
-    // Konten Dummy Default
-    contentHTML = `
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-            <p><b>Bahan & Cara Membuat:</b><br>Silakan kreasikan sesuai selera Anda. Resep ini adalah inspirasi menu harian.</p>
-        `;
-  }
-
-  document.getElementById("detail-desc").innerHTML = contentHTML;
-  document.getElementById("article-view").classList.add("active");
-};
-
-// Login Logic
-function updateUI(user) {
-  // Icon Google
-  const googleIcon =
-    "https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg";
-
-  if (user) {
-    // Mini Header
-    document.getElementById("header-username").innerText =
-      user.displayName.split(" ")[0];
-    document.getElementById("header-avatar").innerHTML =
-      `<img src="${user.photoURL}">`;
-
-    // Profile Page
-    document.getElementById("profile-name-large").innerText = user.displayName;
-    document.getElementById("profile-email-large").innerText = user.email;
-    document.getElementById("profile-avatar-large").innerHTML =
-      `<img src="${user.photoURL}">`;
-
-    document.getElementById("auth-btn-container").innerHTML = `
-            <button class="login-google-btn" style="border-color:#fee2e2; color:#b91c1c" onclick="auth.signOut()">
-                Logout
-            </button>
-        `;
-  } else {
-    // Reset
-    document.getElementById("header-username").innerText = "Guest User";
-    document.getElementById("header-avatar").innerHTML = "G";
-
-    document.getElementById("profile-name-large").innerText = "Guest User";
-    document.getElementById("profile-email-large").innerText =
-      "Login untuk simpan data";
-    document.getElementById("profile-avatar-large").innerHTML = "G";
-
-    document.getElementById("auth-btn-container").innerHTML = `
-            <button class="login-google-btn" onclick="auth.signInWithPopup(provider)">
-                <img src="${googleIcon}" width="18"> Masuk dengan Google
-            </button>
-        `;
-  }
-}
-
-window.searchFaq = () => {
-  const input = document.getElementById("faq-search");
-  const filter = input.value.toLowerCase();
-  const faqList = document.getElementById("faq-list");
-  const items = faqList.getElementsByClassName("faq-item");
-
-  for (let i = 0; i < items.length; i++) {
-    const question = items[i].getElementsByClassName("faq-question")[0];
-    const txtValue = question.textContent || question.innerText;
-    if (txtValue.toLowerCase().indexOf(filter) > -1) {
-      items[i].style.display = "";
-    } else {
-      items[i].style.display = "none";
-    }
-  }
-};
-
-// --- POPUP LOGIC (UPDATED) ---
-window.openPopup = (type) => {
-  let title = "";
-  let content = "";
-  let iconName = "";
-
-  if (type === "bantuan") {
-    title = "Bantuan & FAQ";
-    iconName = "help-circle";
-    content = `
-            <input type="text" placeholder="Cari pertanyaan..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px; font-size:14px;">
-            
-            <div class="faq-list">
-                <div class="faq-item" onclick="toggleFaq(this)">
-                    <div class="faq-question">Cara cari resep? <i data-feather="chevron-down"></i></div>
-                    <div class="faq-answer">Pilih bahan yang kamu punya di halaman Home, lalu klik tombol Cari Resep.</div>
-                </div>
-                <div class="faq-item" onclick="toggleFaq(this)">
-                    <div class="faq-question">Apakah gratis? <i data-feather="chevron-down"></i></div>
-                    <div class="faq-answer">Ya, aplikasi ini 100% gratis untuk digunakan siapa saja.</div>
-                </div>
-                <div class="faq-item" onclick="toggleFaq(this)">
-                    <div class="faq-question">Lupa password? <i data-feather="chevron-down"></i></div>
-                    <div class="faq-answer">Karena login menggunakan Google, silakan reset password akun Google Anda.</div>
-                </div>
-            </div>
-
-            <button class="find-btn" style="margin-top:20px; font-size:14px; padding:10px;">
-                <i data-feather="mail"></i> Hubungi Dukungan
-            </button>
-        `;
-  } else if (type === "privasi") {
-    title = "Kebijakan Privasi";
-    iconName = "shield";
-    content = `
-            <div class="privacy-text">
-                <b>Pendahuluan</b><br>
-                Selamat datang di Aplikasi Masak Apa?. Kami menghargai privasi Anda...<br><br>
-                <b>Data yang Kami Kumpulkan</b><br>
-                Kami hanya menggunakan data Login Google (Nama & Foto) untuk personalisasi...<br><br>
-                <b>Penggunaan Data</b><br>
-                Data digunakan untuk menyimpan preferensi bahan dan resep favorit Anda secara lokal...<br><br>
-                <b>Hubungi Kami</b><br>
-                Jika ada pertanyaan, hubungi support@masakapa.com
-            </div>
-            <p style="font-size:10px; color:#888; text-align:right;">Terakhir diperbaharui: 19 Februari 2026</p>
-            <button class="find-btn" onclick="closePopup()">Saya Mengerti</button>
-        `;
-  } else if (type === "tentang") {
-    title = "Tentang Aplikasi";
-    iconName = "info";
-    content = `
-            <div style="text-align:center;">
-                <div class="about-logo">MA?</div>
-                <h4 style="margin:5px 0;">Masak Apa? v1.0.0</h4>
-                <p style="margin:0; font-size:12px; color:#888;">Update: 19 Februari 2026</p>
-            </div>
-            <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-            <div style="font-size:13px; text-align:left;">
-                <b>Apa yang baru di v1.0:</b>
-                <ul style="padding-left:20px; margin:5px 0; color:#555;">
-                    <li>Pencarian resep berdasarkan bahan</li>
-                    <li>Login Google integration</li>
-                    <li>Mode Gelap (Dark Mode)</li>
-                    <li>Tampilan baru yang fresh</li>
-                </ul>
-            </div>
-            <button class="find-btn" style="background:#f3f4f6; color:#333; margin-top:20px;" onclick="location.reload()">
-                <i data-feather="monitor"></i> Cek Pembaruan
-            </button>
-        `;
-  }
-
-  // Set konten popup
-  document.getElementById("popup-title").innerText = title;
-  document.getElementById("popup-icon").setAttribute("data-feather", iconName);
-  document.getElementById("popup-body").innerHTML = content;
-
-  // Tampilkan Popup
-  document.getElementById("info-popup").classList.add("active");
-  feather.replace(); // Render icon baru
-};
-
-window.searchFaq = () => {
-  const input = document.getElementById("faq-search");
-  const filter = input.value.toLowerCase();
-  const items = document.getElementsByClassName("faq-item");
-
-  for (let i = 0; i < items.length; i++) {
-    const text = items[i].innerText || items[i].textContent;
-    if (text.toLowerCase().indexOf(filter) > -1) {
-      items[i].style.display = "";
-    } else {
-      items[i].style.display = "none";
-    }
-  }
-};
-
-// Fungsi Toggle Accordion FAQ
-window.toggleFaq = (element) => {
-  element.classList.toggle("active");
-};
-window.closePopup = () =>
-  document.getElementById("info-popup").classList.remove("active");
-window.resetData = () => {
-  if (confirm("Reset data?")) location.reload();
-};
-window.toggleTheme = () => {
-  const body = document.body;
-  const isDark = body.getAttribute("data-theme") === "dark";
-  const btn = document.getElementById("theme-btn"); // Ambil tombol lewat ID
-
-  if (isDark) {
-    // Pindah ke Light Mode
-    body.removeAttribute("data-theme");
-    if (btn) btn.innerHTML = `<i data-feather="moon"></i> Mode Gelap`; // Teks ajakan
-  } else {
-    // Pindah ke Dark Mode
-    body.setAttribute("data-theme", "dark");
-    if (btn) btn.innerHTML = `<i data-feather="sun"></i> Mode Terang`; // Teks ajakan
-  }
-  feather.replace();
-};
-
-// Logic ganti Icon & Teks di Menu Profil secara realtime
-// Cari elemen menu item tema (kita cari manual lewat text content atau ID)
-// Tips: Biar gampang, di HTML kasih ID ke div menu tema: <div id="theme-menu-item" ...>
-// Tapi pake cara querySelector text juga bisa:
-const themeItems = document.querySelectorAll(".menu-item");
-themeItems.forEach((item) => {
-  if (
-    item.innerText.includes("Tema Tampilan") ||
-    item.innerText.includes("Mode")
-  ) {
-    if (!isDark) {
-      // Jadi Dark
-      item.innerHTML = `<i data-feather="sun"></i> Mode Terang`;
-      item.classList.add("theme-btn-active");
-    } else {
-      // Jadi Light
-      item.innerHTML = `<i data-feather="moon"></i> Mode Gelap`;
-      item.classList.remove("theme-btn-active");
-    }
-    feather.replace();
-  }
-});
-
-// --- LOGIC RESEPKU (CREATE & RENDER) ---
-
-// 1. Render Card Horizontal di Profil
-function renderMyRecipes() {
-  const container = document.getElementById("my-recipes-scroll");
-
-  if (myRecipes.length === 0) {
-    container.innerHTML = `<p style="font-size:12px; color:#888; padding:10px;">Belum ada resep buatanmu.</p>`;
-    return;
-  }
-
-  container.innerHTML = myRecipes
-    .map(
-      (item, index) => `
-        <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${(item.desc || "").replace(/'/g, "\\'")}')">
-            <button class="edit-btn" onclick="event.stopPropagation(); openRecipeForm(${index})">
-                <i data-feather="edit-2" style="width:12px; height:12px;"></i>
-            </button>
-            <img src="${item.img}" loading="lazy">
-            <div class="mini-card-info">
-                <span class="card-tag" style="font-size:8px;">${item.tag}</span>
-                <h4 style="margin-top:4px;">${item.title}</h4>
-            </div>
-        </div>
-    `,
-    )
-    .join("");
-
-  feather.replace();
-}
-
-// 2. Simpan Resep
-window.saveMyRecipe = () => {
-  if (!currentUser) {
-    alert("Silakan login Google dulu untuk menyimpan resep!");
-    return;
-  }
-
-  const title = document.getElementById("rec-title").value;
-  const tag = document.getElementById("rec-tag").value;
-  const img =
-    document.getElementById("rec-img").value ||
-    "https://placehold.co/300x200?text=No+Image";
-  const desc = document.getElementById("rec-desc").value;
-  const index = parseInt(document.getElementById("edit-index").value);
-
-  if (!title) return alert("Judul wajib diisi!");
-
-  const newRecipe = { title, tag, img, desc };
-
-  if (index >= 0) {
-    // Update yang ada
-    myRecipes[index] = newRecipe;
-  } else {
-    // Tambah baru
-    myRecipes.push(newRecipe);
-  }
-
-  // Simpan ke LocalStorage dengan Key UID User
-  localStorage.setItem("recipes_" + currentUser.uid, JSON.stringify(myRecipes));
-
-  // Tutup Form & Refresh UI
-  // Kita panggil history.back() agar menutup form & memicu popstate
-  history.back();
-
-  renderMyRecipes();
-
-  // Refresh Menu Global agar resep baru muncul di tab Menu
-  const allMenus = [...menus, ...myRecipes];
-  renderGrid("menu-container", allMenus);
-
-  alert("Resep berhasil disimpan!");
-};
-
-// --- PERBAIKAN TOTAL: TOMBOL BACK & NAVIGASI ---
-
-// 1. Logika Listener Tombol Back HP (Hanya ada SATU ini)
-window.addEventListener("popstate", (event) => {
-  // Cek modal mana yang terbuka
-  const recipeForm = document.getElementById("recipe-form");
+// Listener Back Button HP (Popstate)
+window.onpopstate = (event) => {
   const articleView = document.getElementById("article-view");
+  const recipeForm = document.getElementById("recipe-form");
   const infoPopup = document.getElementById("info-popup");
-
-  // Jika Form Resep terbuka -> Tutup
-  if (recipeForm && recipeForm.style.display === "flex") {
-    recipeForm.style.display = "none";
-    return;
-  }
 
   // Jika Artikel terbuka -> Tutup
   if (articleView && articleView.classList.contains("active")) {
     articleView.classList.remove("active");
     return;
   }
-
+  // Jika Form Resep terbuka -> Tutup
+  if (recipeForm && recipeForm.style.display === "flex") {
+    recipeForm.style.display = "none";
+    return;
+  }
   // Jika Popup Info terbuka -> Tutup
   if (infoPopup && infoPopup.classList.contains("active")) {
     infoPopup.classList.remove("active");
     return;
   }
-});
+};
 
-// 2. Fungsi Buka Form Resep
+// -- FUNGSI BUKA ARTIKEL --
+window.openArticle = (title, tag, img, desc = null) => {
+  document.getElementById("detail-title").innerText = title;
+  document.getElementById("detail-category").innerText = tag;
+  document.getElementById("detail-image").style.backgroundImage =
+    `url('${img}')`;
+
+  let contentHTML = desc
+    ? `<p>${desc.replace(/\n/g, "<br>")}</p>`
+    : `<p>Tidak ada deskripsi.</p>`;
+  document.getElementById("detail-desc").innerHTML = contentHTML;
+
+  // Tampilkan
+  document.getElementById("article-view").classList.add("active");
+
+  // Push History (Agar tombol back HP jalan)
+  history.pushState({ modal: "article" }, null, "");
+};
+
+// -- FUNGSI TUTUP ARTIKEL (Manual) --
+window.closeArticle = () => {
+  // Panggil history.back() agar trigger onpopstate di atas
+  history.back();
+};
+
+// --- 7. LOGIC FORM RESEPKU ---
+
+// -- FUNGSI BUKA FORM --
 window.openRecipeForm = (index = -1) => {
-  // Cek Login Dulu
   if (!currentUser) {
-    alert("Kamu harus Login Google dulu untuk buat resep!");
+    alert("Silakan Login Google dulu untuk menambah resep!");
     return;
   }
-
-  const form = document.getElementById("recipe-form");
 
   // Reset Form
   document.getElementById("rec-title").value = "";
@@ -582,7 +329,6 @@ window.openRecipeForm = (index = -1) => {
   document.getElementById("rec-desc").value = "";
   document.getElementById("edit-index").value = index;
 
-  // Jika Edit, isi data lama
   if (index >= 0 && myRecipes[index]) {
     const item = myRecipes[index];
     document.getElementById("rec-title").value = item.title;
@@ -592,45 +338,156 @@ window.openRecipeForm = (index = -1) => {
   }
 
   // Tampilkan Form
+  const form = document.getElementById("recipe-form");
   form.style.display = "flex";
 
-  // Push History agar tombol back HP aktif
-  // Kita beri penanda state 'modal: recipe'
-  history.pushState({ modal: "recipe" }, null, "");
+  // Push History
+  history.pushState({ modal: "form" }, null, "");
 };
 
-// 3. Fungsi Tutup Form (Manual klik tombol X)
+// -- FUNGSI TUTUP FORM --
 window.closeRecipeForm = () => {
-  // Panggil back(), biarkan listener popstate yang menutup UI
   history.back();
 };
 
-// 4. Fungsi Buka Artikel
-window.openArticle = (title, tag, img, desc = null) => {
-  document.getElementById("detail-title").innerText = title;
-  document.getElementById("detail-category").innerText = tag;
-  document.getElementById("detail-image").style.backgroundImage =
-    `url('${img}')`;
+// -- FUNGSI SIMPAN RESEP --
+window.saveMyRecipe = () => {
+  if (!currentUser) return;
 
-  // Logic isi konten
-  let contentHTML = "";
-  if (desc) {
-    // Replace newline dengan <br>
-    contentHTML = `<p>${desc.replace(/\n/g, "<br>")}</p>`;
+  const title = document.getElementById("rec-title").value;
+  const tag = document.getElementById("rec-tag").value;
+  const img =
+    document.getElementById("rec-img").value || "https://placehold.co/300x200";
+  const desc = document.getElementById("rec-desc").value;
+  const index = parseInt(document.getElementById("edit-index").value);
+
+  if (!title) return alert("Judul wajib diisi!");
+
+  const newRecipe = { title, tag, img, desc };
+
+  if (index >= 0) {
+    myRecipes[index] = newRecipe;
   } else {
-    contentHTML = `<p>Lorem ipsum dolor sit amet...</p><p>Deskripsi dummy untuk artikel ini.</p>`;
+    myRecipes.push(newRecipe);
   }
-  document.getElementById("detail-desc").innerHTML = contentHTML;
 
-  // TAMPILKAN
-  document.getElementById("article-view").classList.add("active");
+  localStorage.setItem("recipes_" + currentUser.uid, JSON.stringify(myRecipes));
 
-  // PUSH HISTORY (Ini kuncinya agar tombol back berfungsi)
-  history.pushState({ modal: "article" }, null, "");
+  // Tutup form (trigger history back)
+  history.back();
+
+  // Render ulang
+  renderMyRecipes();
+  renderGrid("menu-container", [...menus, ...myRecipes]);
+
+  alert("Resep tersimpan!");
 };
 
-// 5. Fungsi Tutup Artikel (Manual klik tombol back di layar)
-window.closeArticle = () => {
-  // Panggil back(), biarkan listener popstate yang menutup UI
+// --- 8. LOGIC POPUP INFO/FAQ ---
+window.openPopup = (type) => {
+  let title = "",
+    content = "",
+    iconName = "info";
+
+  if (type === "bantuan") {
+    title = "Bantuan & FAQ";
+    iconName = "help-circle";
+    content = `
+       <input type="text" id="faq-search" onkeyup="searchFaq()" placeholder="Cari..." style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ddd; border-radius:8px;">
+       <div id="faq-list">
+          <div class="faq-item" onclick="this.classList.toggle('active')">
+             <div class="faq-question">Cara pakai? <i data-feather="chevron-down" style="float:right"></i></div>
+             <div class="faq-answer">Pilih bahan di Home, klik Cari Resep.</div>
+          </div>
+          <div class="faq-item" onclick="this.classList.toggle('active')">
+             <div class="faq-question">Gratis? <i data-feather="chevron-down" style="float:right"></i></div>
+             <div class="faq-answer">Ya, 100% gratis.</div>
+          </div>
+       </div>
+       <button class="find-btn" onclick="window.location.href='mailto:muhammadazizy48@gmail.com'" style="margin-top:20px; width:100%">
+          <i data-feather="mail"></i> Hubungi Kami
+       </button>
+    `;
+  } else if (type === "privasi") {
+    title = "Kebijakan Privasi";
+    iconName = "shield";
+    content = `<p>Kami tidak menyalahgunakan data Anda.</p><button class="find-btn" onclick="closePopup()">Tutup</button>`;
+  } else if (type === "tentang") {
+    title = "Tentang";
+    content = `<div style="text-align:center"><img src="icon.png" width="60"><p>v1.0.0</p></div>`;
+  }
+
+  document.getElementById("popup-title").innerText = title;
+  document.getElementById("popup-icon").setAttribute("data-feather", iconName);
+  document.getElementById("popup-body").innerHTML = content;
+
+  document.getElementById("info-popup").classList.add("active");
+  if (typeof feather !== "undefined") feather.replace();
+
+  // Push History
+  history.pushState({ modal: "popup" }, null, "");
+};
+
+window.closePopup = () => {
   history.back();
 };
+
+window.searchFaq = () => {
+  const filter = document.getElementById("faq-search").value.toLowerCase();
+  const items = document.getElementsByClassName("faq-item");
+  for (let i = 0; i < items.length; i++) {
+    const txt = items[i].innerText || items[i].textContent;
+    items[i].style.display = txt.toLowerCase().includes(filter) ? "" : "none";
+  }
+};
+
+// --- 9. UTILS (Theme & Reset) ---
+window.toggleTheme = () => {
+  const body = document.body;
+  const isDark = body.getAttribute("data-theme") === "dark";
+  const btn = document.getElementById("theme-btn");
+
+  if (isDark) {
+    body.removeAttribute("data-theme");
+    if (btn) btn.innerHTML = `<i data-feather="moon"></i> Mode Gelap`;
+  } else {
+    body.setAttribute("data-theme", "dark");
+    if (btn) btn.innerHTML = `<i data-feather="sun"></i> Mode Terang`;
+  }
+  if (typeof feather !== "undefined") feather.replace();
+};
+
+window.resetData = () => {
+  if (confirm("Reset data?")) location.reload();
+};
+
+// --- AUTH UI ---
+function updateUI(user) {
+  const googleIcon =
+    "https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg";
+  if (user) {
+    document.getElementById("header-username").innerText =
+      user.displayName.split(" ")[0];
+    document.getElementById("header-avatar").innerHTML =
+      `<img src="${user.photoURL}">`;
+
+    document.getElementById("profile-name-large").innerText = user.displayName;
+    document.getElementById("profile-email-large").innerText = user.email;
+    document.getElementById("profile-avatar-large").innerHTML =
+      `<img src="${user.photoURL}">`;
+
+    document.getElementById("auth-btn-container").innerHTML =
+      `<button class="login-google-btn" style="border-color:#fee2e2; color:#b91c1c" onclick="auth.signOut()">Logout</button>`;
+  } else {
+    document.getElementById("header-username").innerText = "Guest User";
+    document.getElementById("header-avatar").innerHTML = "G";
+
+    document.getElementById("profile-name-large").innerText = "Guest User";
+    document.getElementById("profile-email-large").innerText =
+      "Login untuk simpan data";
+    document.getElementById("profile-avatar-large").innerHTML = "G";
+
+    document.getElementById("auth-btn-container").innerHTML =
+      `<button class="login-google-btn" onclick="auth.signInWithPopup(provider)"><img src="${googleIcon}" width="18"> Masuk dengan Google</button>`;
+  }
+}

@@ -775,14 +775,18 @@ header {
   font-family: inherit;
 }
 
-/* Pastikan Modal Form ada di paling depan */
-#recipe-form {
-  z-index: 9999 !important; /* Paksa paling atas */
-  background: rgba(0, 0, 0, 0.8); /* Gelapkan background biar fokus */
-}
-
-/* Pastikan tombol tambah resep bisa diklik */
+/* Pastikan tombol + di profil bisa diklik */
 .my-recipes-section button {
   position: relative;
   z-index: 10;
+}
+
+/* Pastikan Modal Form Paling Atas */
+#recipe-form {
+  z-index: 9999 !important;
+}
+
+/* Pastikan Artikel View Paling Atas */
+#article-view {
+  z-index: 9998 !important;
 }
