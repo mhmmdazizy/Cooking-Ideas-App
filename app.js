@@ -1,3 +1,9 @@
+// --- BACA TEMA DETIK PERTAMA ---
+const savedTheme = localStorage.getItem("appTheme");
+if (savedTheme === "dark") {
+  document.body.setAttribute("data-theme", "dark");
+}
+// -------------------------------
 // --- 1. CONFIG FIREBASE (PASTE CONFIG KAMU DI SINI) ---
 const firebaseConfig = {
   apiKey: "AIzaSyBIM86KidwhWLIdQkVv38xfNJUK3pmKmc8",
@@ -24,6 +30,13 @@ let allCloudRecipes = [];
 // --- 3. START APP ---
 document.addEventListener("DOMContentLoaded", () => {
   console.log("App Started...");
+
+  // Update teks tombol tema kalau sebelumnya mode gelap
+  const themeBtn = document.getElementById("theme-btn");
+  if (localStorage.getItem("appTheme") === "dark" && themeBtn) {
+    themeBtn.innerHTML = `<i data-feather="sun"></i> Mode Terang`;
+  }
+
   // Memori lokal akan mengembalikan angka fav menu statis yang sudah di-like
   favorites.forEach((fav) => {
     const staticMenu = menus.find((m) => m.title === fav.title);
@@ -65,9 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         renderMyRecipes();
         // Render jika sedang di halaman menu
-        if (document.getElementById("menu-page").classList.contains("active")) {
-          renderGrid("menu-container", [...menus, ...allCloudRecipes]);
-        }
+        renderGrid("menu-container", [...menus, ...allCloudRecipes]);
       });
 
     // 2. SINKRONISASI ANGKA FAVORIT GLOBAL SE-DUNIA
@@ -103,12 +114,9 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("myFavorites", JSON.stringify(favorites));
 
       // Render Ulang Layar secara Realtime
-      if (document.getElementById("explore").classList.contains("active"))
-        renderGrid("explore-container", articles);
-      if (document.getElementById("menu-page").classList.contains("active"))
-        renderGrid("menu-container", [...menus, ...allCloudRecipes]);
-      if (document.getElementById("favorit").classList.contains("active"))
-        renderGrid("favorit-container", favorites);
+      renderGrid("explore-container", articles);
+      renderGrid("menu-container", [...menus, ...allCloudRecipes]);
+      renderGrid("favorit-container", favorites);
     });
   });
 });
@@ -121,7 +129,8 @@ function renderIngredients() {
       .map(
         (ing) => `
     <div class="ing-item" onclick="toggleIng('${ing.id}', this)">
-        <i data-feather="${ing.icon}"></i> ${ing.name}
+        <img src="${ing.icon}" alt="${ing.name}" class="ing-png-icon">
+        <span>${ing.name}</span>
     </div>`,
       )
       .join("");
@@ -420,18 +429,30 @@ window.toggleTheme = () => {
   const body = document.body;
   const isDark = body.getAttribute("data-theme") === "dark";
   const btn = document.getElementById("theme-btn");
+
   if (isDark) {
+    // Kembali ke mode terang
     body.removeAttribute("data-theme");
     if (btn) btn.innerHTML = `<i data-feather="moon"></i> Mode Gelap`;
+    // Simpan ke memori
+    localStorage.setItem("appTheme", "light");
   } else {
+    // Pindah ke mode gelap
     body.setAttribute("data-theme", "dark");
     if (btn) btn.innerHTML = `<i data-feather="sun"></i> Mode Terang`;
+    // Simpan ke memori
+    localStorage.setItem("appTheme", "dark");
   }
+
   if (typeof feather !== "undefined") feather.replace();
 };
 
 window.resetData = () => {
-  if (confirm("Reset?")) location.reload();
+  openPopup("reset");
+};
+
+window.confirmReset = () => {
+  location.reload();
 };
 
 // --- 7. MODALS & POPUPS ---
@@ -457,7 +478,10 @@ window.openArticle = (title, tag, img, desc = null, author = "Admin") => {
 window.closeArticle = () => history.back();
 
 window.openRecipeForm = (index = -1) => {
-  if (!currentUser) return alert("Silakan Login Google dulu!");
+  if (!currentUser) {
+    openPopup("login dulu");
+    return;
+  }
   const form = document.getElementById("recipe-form");
 
   // Reset Form Default
@@ -502,7 +526,7 @@ window.openPopup = (type) => {
             <div id="faq-list" style="margin-bottom:20px;">
                 <div class="faq-item" onclick="this.classList.toggle('active')">
                     <div class="faq-question">Cara cari resep? <i data-feather="chevron-down" style="float:right;"></i></div>
-                    <div class="faq-answer">Centang bahan-bahan yang kamu miliki di halaman Home, lalu klik tombol "Cari Resep" di bawah.</div>
+                    <div class="faq-answer">Pilih bahan-bahan yang kamu miliki di halaman Home, lalu klik tombol "Cari Resep".</div>
                 </div>
                 <div class="faq-item" onclick="this.classList.toggle('active')">
                     <div class="faq-question">Apakah aplikasi ini gratis? <i data-feather="chevron-down" style="float:right;"></i></div>
@@ -558,6 +582,27 @@ window.openPopup = (type) => {
             <button class="find-btn" style="background:var(--bg); color:var(--text); margin-top:15px; border:1px solid var(--border);" onclick="location.reload()">
                 <i data-feather="refresh-cw"></i> Cek Pembaruan
             </button>
+        `;
+  } else if (type === "Belum ada yang dipilih") {
+    title = "Belum ada yang dipilih";
+    icon = "info"; // Icon peringatan
+    content = `
+            <p style="text-align:center; margin-bottom:15px;">Pilih minimal 1 bahan di kulkasmu dulu ya!</p>
+            <button class="find-btn" onclick="closePopup()" style="width:100%;">Oke, Siap!</button>
+        `;
+  } else if (type === "login dulu") {
+    title = "Tidak bisa tambah resep";
+    icon = "info"; // Icon peringatan
+    content = `
+            <p style="text-align:center; margin-bottom:15px;">Silakan login terlebih dahulu.</p>
+            <button class="find-btn" onclick="closePopup()" style="width:100%;">Oke</button>
+        `;
+  } else if (type === "reset") {
+    title = "Hapus data & reset";
+    icon = "alert-triangle"; // Icon peringatan
+    content = `
+            <p style="text-align:center; margin-bottom:15px;">Yakin mau reset?</p>
+            <button class="find-btn" onclick="confirmReset()" style="width:100%;">Yakin</button>
         `;
   }
   document.getElementById("popup-title").innerText = title;
@@ -685,7 +730,8 @@ window.shareArticle = () => {
 window.findRecipes = () => {
   // 1. Cek apakah ada bahan yang dicentang
   if (selectedIngredients.size === 0) {
-    alert("Pilih minimal 1 bahan di kulkasmu dulu ya!");
+    // GANTI alert DENGAN INI:
+    openPopup("Belum ada yang dipilih");
     return;
   }
 
@@ -725,7 +771,7 @@ window.findRecipes = () => {
     // Kalau kata "telur" atau bahan lainnya tidak ada di teks deskripsi manapun
     container.innerHTML = `
             <p style="grid-column: 1 / -1; text-align:center; color:var(--text-muted); font-size:13px; margin-top:10px;">
-                Yah, belum ada resep yang cocok dengan bahan tersebut. Coba pilih bahan lain atau kurangi centangnya!
+                Yah, belum ada resep yang cocok dengan bahan tersebut. Coba pilih bahan lain atau kurangi pilihannya!
             </p>
         `;
   }
