@@ -19,17 +19,32 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// 2. Saat HP Offline, Ambil Data dari Memori (Bukan dari Internet)
+// 2. Saat HP Offline, Ambil Data dari Memori Pintar
 self.addEventListener("fetch", (event) => {
+  // Hanya simpan file yang sifatnya GET (mengambil data), abaikan perintah POST (menyimpan data)
+  if (event.request.method !== "GET") return;
+
   event.respondWith(
     caches
       .match(event.request)
       .then((response) => {
-        // Jika file ada di memori offline, pakai itu. Kalau tidak, ambil dari internet.
-        return response || fetch(event.request);
+        // 1. Jika file sudah ada di memori offline, langsung pakai!
+        if (response) {
+          return response;
+        }
+
+        // 2. Jika belum ada, ambil dari internet...
+        return fetch(event.request).then((networkResponse) => {
+          // ... LALU SIMPAN ke memori offline agar besok bisa dipakai saat gak ada internet!
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        });
       })
       .catch(() => {
-        // Abaikan error jika benar-benar offline dan mencari data Firebase
+        // Abaikan error jaringan agar aplikasi tidak "nge-hang"
+        console.log("Kamu sedang offline!");
       }),
   );
 });
