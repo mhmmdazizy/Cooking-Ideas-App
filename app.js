@@ -29,6 +29,14 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 const db = firebase.firestore(); // Database Gratis
+// === TAMBAHKAN BLOK KODE INI BIAR FIREBASE KEBAL OFFLINE ===
+db.enablePersistence().catch((err) => {
+  if (err.code == "failed-precondition") {
+    console.log("Memori offline gagal: Buka di banyak tab sekaligus.");
+  } else if (err.code == "unimplemented") {
+    console.log("Browser ini tidak mendukung memori offline Firebase.");
+  }
+});
 
 // Variables
 let selectedIngredients = new Set();
