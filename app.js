@@ -3,6 +3,16 @@ const savedTheme = localStorage.getItem("appTheme");
 if (savedTheme === "dark") {
   document.body.setAttribute("data-theme", "dark");
 }
+// --- DAFTARKAN SERVICE WORKER (UNTUK OFFLINE) ---
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => console.log("Mode Offline Aktif!"))
+      .catch((err) => console.log("Mode Offline Gagal:", err));
+  });
+}
+// ------------------------------------------------
 // -------------------------------
 // --- 1. CONFIG FIREBASE (PASTE CONFIG KAMU DI SINI) ---
 const firebaseConfig = {
@@ -157,8 +167,8 @@ function renderGrid(containerId, data) {
       const authorName = item.authorName || "Admin";
       const favCount = item.favCount || 0;
       const docId = item.id || "undefined";
-      const time = item.time || "15 Menit";
-      const servings = item.servings || "2 Porsi";
+      const time = item.time || "- Menit";
+      const servings = item.servings || "- Porsi";
 
       return `
     <div class="card-item menu-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}', '${time}', '${servings}')">
@@ -259,8 +269,8 @@ function renderMyRecipes() {
         .replace(/\n/g, "<br>")
         .replace(/\r/g, "");
       const authorName = item.authorName || "Saya";
-      const time = item.time || "15 Menit";
-      const servings = item.servings || "2 Porsi";
+      const time = item.time || "- Menit";
+      const servings = item.servings || "- Porsi";
 
       return `
         <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}', '${time}', '${servings}')">
@@ -320,8 +330,8 @@ window.saveMyRecipe = async () => {
   const editId = document.getElementById("edit-id").value; // Ambil ID jika ada
   const rawTime = document.getElementById("input-time").value;
   const rawServings = document.getElementById("input-servings").value;
-  const time = rawTime ? `${rawTime} Menit` : "15 Menit";
-  const servings = rawServings ? `${rawServings} Porsi` : "2 Porsi";
+  const time = rawTime ? `${rawTime} Menit` : "- Menit";
+  const servings = rawServings ? `${rawServings} Porsi` : "- Porsi";
 
   if (!title) return alert("Judul wajib diisi!");
 
@@ -473,8 +483,8 @@ window.openArticle = (
   img,
   desc = null,
   author = "Admin",
-  time = "15 Menit",
-  servings = "2 Porsi",
+  time = "- Menit",
+  servings = "- Porsi",
 ) => {
   document.getElementById("detail-title").innerText = title;
   document.getElementById("detail-category").innerText = tag;
@@ -930,4 +940,36 @@ window.addEventListener("appinstalled", () => {
   if (installBtn) installBtn.style.display = "none";
   deferredPrompt = null;
   console.log("Aplikasi berhasil diinstall!");
+});
+// --- FITUR NOTIFIKASI MELAYANG (TOAST) ---
+window.showToast = (message) => {
+  const toast = document.getElementById("toast-notif");
+  if (!toast) return;
+  toast.innerText = message;
+  toast.classList.add("show");
+
+  // Sembunyikan otomatis setelah 3 detik
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
+};
+
+// --- DETEKSI INTERNET (OFFLINE / ONLINE) ---
+window.addEventListener("offline", () => {
+  showToast("Tidak dapat menyambungkan ke internet. Silakan coba lagi.");
+});
+
+window.addEventListener("online", () => {
+  showToast("Kembali online! Internet terhubung.");
+});
+
+// --- UPDATE FITUR INSTALL SEBELUMNYA ---
+// Cari kode window.addEventListener('appinstalled', ...) yang lama, lalu TIMPA dengan ini:
+window.addEventListener("appinstalled", () => {
+  const installBtn = document.getElementById("install-btn");
+  if (installBtn) installBtn.style.display = "none";
+  deferredPrompt = null;
+
+  // Munculkan toast saat berhasil diinstall!
+  showToast("Aplikasi berhasil diinstall! 🎉");
 });

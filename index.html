@@ -227,11 +227,9 @@
             <div class="menu-item" id="theme-btn" onclick="toggleTheme()">
               <i data-feather="moon"></i> Mode Gelap
             </div>
-
-            <button class="menu-item" id="install-btn" style="display: none">
+            <div class="menu-item" id="install-btn" style="display: none">
               <i data-feather="download"></i> Unduh Aplikasi
-            </button>
-          </div>
+            </div>
           <div class="menu-group">
             <h4>Info & Bantuan</h4>
             <div class="menu-item" onclick="openPopup('bantuan')">
@@ -397,11 +395,11 @@
           </span>
           <span>
             <i data-feather="clock" style="width: 14px"></i>
-            <span id="detail-time">15 Menit</span>
+            <span id="detail-time">- Menit</span>
           </span>
           <span>
             <i data-feather="users" style="width: 14px"></i>
-            <span id="detail-servings">2 Porsi</span>
+            <span id="detail-servings">- Porsi</span>
           </span>
         </div>
 
@@ -535,5 +533,6 @@
 
     <script src="database.js"></script>
     <script src="app.js"></script>
+    <div id="toast-notif"></div>
   </body>
 </html>
