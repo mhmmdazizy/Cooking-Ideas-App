@@ -1,4 +1,4 @@
-const CACHE_NAME = "masakin";
+const CACHE_NAME = "Masakin";
 const urlsToCache = [
   "/",
   "/index.html",
@@ -7,6 +7,14 @@ const urlsToCache = [
   "/database.js",
   "/manifest.json",
   "/icon",
+  "icon/telur.png",
+  "icon/tempe.png",
+  "icon/tahu.png",
+  "icon/ayam.png",
+  "icon/bawang merah.png",
+  "icon/cabe.png",
+  "icon/kecap manis.png",
+  "icon/nasi.png",
   // Kamu juga bisa menambahkan '/icon.png' jika mau logonya tersimpan offline
 ];
 
