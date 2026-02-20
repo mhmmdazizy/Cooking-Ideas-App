@@ -9,9 +9,9 @@ const ingredients = [
   { id: "tempe", name: "Tempe", icon: "icon/tempe.png" },
   { id: "tahu", name: "Tahu", icon: "icon/tahu.png" },
   { id: "ayam", name: "Ayam", icon: "icon/ayam.png" },
-  { id: "bawang merah", name: "Bawang merah", icon: "icon/bawang merah.png" },
+  { id: "bawang", name: "Bawang merah", icon: "icon/bawang merah.png" },
   { id: "cabe", name: "Cabai", icon: "icon/cabe.png" },
-  { id: "kecap manis", name: "Kecap manis", icon: "icon/kecap manis.png" },
+  { id: "kecap", name: "Kecap manis", icon: "icon/kecap manis.png" },
   { id: "nasi", name: "Nasi", icon: "icon/nasi.png" },
 ];
 
