@@ -73,12 +73,22 @@ document.addEventListener("DOMContentLoaded", () => {
     // 2. SINKRONISASI ANGKA FAVORIT GLOBAL SE-DUNIA
     db.collection("counters").onSnapshot((snapshot) => {
       const globalCounts = {};
+
       snapshot.forEach((doc) => {
-        // GANTI BARIS INI: Gunakan Math.max agar nilai terendah selalu 0
-        globalCounts[doc.id] = Math.max(0, doc.data().favCount || 0);
+        let count = doc.data().favCount || 0;
+
+        // --- FITUR SELF HEALING ---
+        // Kalau database diam-diam minus, langsung paksa kembali ke 0 di server!
+        if (count < 0) {
+          db.collection("counters")
+            .doc(doc.id)
+            .set({ favCount: 0 }, { merge: true });
+          count = 0; // Tampilkan 0 di layar
+        }
+
+        globalCounts[doc.id] = count;
       });
 
-      // Fungsi penyemat angka terbaru ke semua data
       const applyFavCount = (arr) => {
         arr.forEach((item) => {
           const safeTitle = item.title.replace(/[^a-zA-Z0-9]/g, "_");
@@ -86,14 +96,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       };
 
-      // Terapkan ke semua daftar yang ada di aplikasi
       applyFavCount(menus);
       applyFavCount(articles);
       applyFavCount(allCloudRecipes);
       applyFavCount(favorites);
-      localStorage.setItem("myFavorites", JSON.stringify(favorites)); // Simpan update
+      localStorage.setItem("myFavorites", JSON.stringify(favorites));
 
-      // Render Ulang Layar yang sedang terbuka secara Realtime!
+      // Render Ulang Layar secara Realtime
       if (document.getElementById("explore").classList.contains("active"))
         renderGrid("explore-container", articles);
       if (document.getElementById("menu-page").classList.contains("active"))
@@ -168,27 +177,18 @@ function renderGrid(containerId, data) {
 window.toggleFavorite = (id, title, tag, img, desc, authorName, btn) => {
   const idx = favorites.findIndex((f) => f.title === title);
   const countSpan = btn.parentElement.querySelector(".fav-count");
-  let currentCount = countSpan ? parseInt(countSpan.innerText) || 0 : 0;
-
-  // Ubah judul jadi format aman untuk ID Database (Misal: "Soto Ayam" -> "Soto_Ayam")
   const safeTitleId = title.replace(/[^a-zA-Z0-9]/g, "_");
 
   if (idx === -1) {
-    // JIKA DI-FAVORITKAN
-    currentCount++;
-    favorites.push({
-      id,
-      title,
-      tag,
-      img,
-      desc,
-      authorName,
-      favCount: currentCount,
-    });
+    // LAKUKAN LIKE
+    favorites.push({ id, title, tag, img, desc, authorName });
     btn.classList.add("active");
-    if (countSpan) countSpan.innerText = currentCount;
 
-    // Kirim +1 ke Firebase Universal Counter
+    // Update angka di layar secepat kilat
+    if (countSpan)
+      countSpan.innerText = (parseInt(countSpan.innerText) || 0) + 1;
+
+    // Kirim perintah +1 ke Firebase
     db.collection("counters")
       .doc(safeTitleId)
       .set(
@@ -199,27 +199,18 @@ window.toggleFavorite = (id, title, tag, img, desc, authorName, btn) => {
       )
       .catch(console.error);
   } else {
-    // JIKA DI-UNFAVORITKAN
-
-    // HANYA kurangi di Firebase JIKA angka saat ini lebih dari 0
-    if (currentCount > 0) {
-      db.collection("counters")
-        .doc(safeTitleId)
-        .set(
-          {
-            favCount: firebase.firestore.FieldValue.increment(-1),
-          },
-          { merge: true },
-        )
-        .catch(console.error);
-    }
-
-    currentCount = Math.max(0, currentCount - 1);
+    // BATALKAN LIKE (UNLIKE)
     favorites.splice(idx, 1);
     btn.classList.remove("active");
-    if (countSpan) countSpan.innerText = currentCount;
 
-    // Kirim -1 ke Firebase Universal Counter
+    // Update angka di layar secepat kilat (minimal 0)
+    if (countSpan)
+      countSpan.innerText = Math.max(
+        0,
+        (parseInt(countSpan.innerText) || 0) - 1,
+      );
+
+    // Kirim perintah -1 ke Firebase
     db.collection("counters")
       .doc(safeTitleId)
       .set(
@@ -231,6 +222,7 @@ window.toggleFavorite = (id, title, tag, img, desc, authorName, btn) => {
       .catch(console.error);
   }
 
+  // Refresh halaman favorit kalau lagi dibuka
   if (document.getElementById("favorit").classList.contains("active")) {
     renderGrid("favorit-container", favorites);
   }
@@ -504,14 +496,69 @@ window.openPopup = (type) => {
   if (type === "bantuan") {
     title = "Bantuan";
     icon = "help-circle";
-    content = `<div class="faq-item" onclick="this.classList.toggle('active')"><div class="faq-question">Cara pakai?</div><div class="faq-answer">Pilih bahan, cari resep.</div></div><button class="find-btn" onclick="location.href='mailto:muhammadazizy48@gmail.com'" style="margin-top:10px">Kontak Kami</button>`;
+    content = `
+    <input type="text" id="faq-search" onkeyup="searchFaq()" placeholder="Cari pertanyaan..." style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; margin-bottom:15px; background:var(--bg); color:var(--text);">
+            
+            <div id="faq-list" style="margin-bottom:20px;">
+                <div class="faq-item" onclick="this.classList.toggle('active')">
+                    <div class="faq-question">Cara cari resep? <i data-feather="chevron-down" style="float:right;"></i></div>
+                    <div class="faq-answer">Centang bahan-bahan yang kamu miliki di halaman Home, lalu klik tombol "Cari Resep" di bawah.</div>
+                </div>
+                <div class="faq-item" onclick="this.classList.toggle('active')">
+                    <div class="faq-question">Apakah aplikasi ini gratis? <i data-feather="chevron-down" style="float:right;"></i></div>
+                    <div class="faq-answer">Ya, 100% gratis. Kamu bisa traktir kopi developer jika suka!</div>
+                </div>
+                <div class="faq-item" onclick="this.classList.toggle('active')">
+                    <div class="faq-question">Kenapa hasil resep kosong? <i data-feather="chevron-down" style="float:right;"></i></div>
+                    <div class="faq-answer">Mungkin kombinasi bahan yang kamu pilih belum ada di database kami. Coba kurangi jumlah bahan yang dicentang.</div>
+                </div>
+            </div>
+
+            <button class="find-btn" onclick="window.location.href='mailto:muhammadazizy48@gmail.com'" style="display:flex; justify-content:center; align-items:center; gap:10px;">
+                <i data-feather="mail"></i> Hubungi Dukungan
+            </button>
+        `;
   } else if (type === "privasi") {
     title = "Privasi";
     icon = "shield";
-    content = `<p>Data aman.</p><button class="find-btn" onclick="closePopup()">Tutup</button>`;
+    content = `
+    <div class="privacy-text" style="height:300px; overflow-y:auto; background:var(--bg); padding:15px; border-radius:12px; font-size:12px; line-height:1.6; margin-bottom:10px;">
+                <b>1. Pendahuluan</b><br>
+                Selamat datang di Aplikasi Masak Apa?. Privasi Anda adalah prioritas kami.<br><br>
+                <b>2. Data yang Kami Kumpulkan</b><br>
+                Kami tidak mengumpulkan data pribadi secara diam-diam. Login Google hanya digunakan untuk menampilkan Nama & Foto Profil Anda di dalam aplikasi secara lokal.<br><br>
+                <b>3. Keamanan</b><br>
+                Aplikasi ini tidak menyimpan data sensitif Anda di server eksternal kami.<br><br>
+                <b>4. Kontak</b><br>
+                Hubungi kami di muhammadazizy48@gmail.com
+            </div>
+            <p style="text-align:right; font-size:10px; color:var(--text-muted);">Diperbaharui: 19 Feb 2026</p>
+            <button class="find-btn" onclick="closePopup()">Saya Mengerti</button>
+        `;
   } else if (type === "tentang") {
     title = "Tentang";
-    content = `<center><img src="icon.png" width="50"><p>v1.0</p></center>`;
+    content = `
+<div style="text-align:center; padding:20px 0;">
+                <center><img src="icon.png" width="50"><p>v1.0</p></center>
+                
+                <h3 style="margin:0;">Masakin</h3>
+                <p style="margin:5px 0 0; color:var(--text-muted); font-size:14px;">Versi 1.0.0</p>
+                <p style="margin:0; font-size:12px; color:var(--text-muted);">Update: 19 Feb 2026</p>
+            </div>
+            
+            <div style="background:var(--bg); padding:15px; border-radius:12px; font-size:13px;">
+                <b>Yang Baru:</b>
+                <ul style="padding-left:20px; margin:10px 0;">
+                    <li>Tampilan baru lebih fresh</li>
+                    <li>Fitur Favorit Resep</li>
+                    <li>Mode Gelap & Terang</li>
+                </ul>
+            </div>
+
+            <button class="find-btn" style="background:var(--bg); color:var(--text); margin-top:15px; border:1px solid var(--border);" onclick="location.reload()">
+                <i data-feather="refresh-cw"></i> Cek Pembaruan
+            </button>
+        `;
   }
   document.getElementById("popup-title").innerText = title;
   document.getElementById("popup-icon").setAttribute("data-feather", icon);
@@ -753,4 +800,20 @@ window.deleteNotif = (notifId) => {
 
   // Render ulang biar langsung hilang
   renderNotifications();
+};
+window.searchFaq = () => {
+  const input = document.getElementById("faq-search");
+  const filter = input.value.toLowerCase();
+  const faqList = document.getElementById("faq-list");
+  const items = faqList.getElementsByClassName("faq-item");
+
+  for (let i = 0; i < items.length; i++) {
+    const question = items[i].getElementsByClassName("faq-question")[0];
+    const txtValue = question.textContent || question.innerText;
+    if (txtValue.toLowerCase().indexOf(filter) > -1) {
+      items[i].style.display = "";
+    } else {
+      items[i].style.display = "none";
+    }
+  }
 };
