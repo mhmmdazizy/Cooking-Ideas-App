@@ -318,8 +318,10 @@ window.saveMyRecipe = async () => {
   const desc = document.getElementById("rec-desc").value;
   const fileInput = document.getElementById("rec-file");
   const editId = document.getElementById("edit-id").value; // Ambil ID jika ada
-  const time = document.getElementById("input-time").value || "15 Menit";
-  const servings = document.getElementById("input-servings").value || "2 Porsi";
+  const rawTime = document.getElementById("input-time").value;
+  const rawServings = document.getElementById("input-servings").value;
+  const time = rawTime ? `${rawTime} Menit` : "15 Menit";
+  const servings = rawServings ? `${rawServings} Porsi` : "2 Porsi";
 
   if (!title) return alert("Judul wajib diisi!");
 

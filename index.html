@@ -451,17 +451,40 @@
               "
               >Waktu Masak</label
             >
-            <input
-              type="text"
-              id="input-time"
-              placeholder="Misal: 30 Menit"
+            <div
               style="
-                width: 100%;
-                padding: 10px;
-                border: 1px solid #ddd;
+                display: flex;
+                align-items: center;
+                border: 1px solid var(--border, #ddd);
                 border-radius: 8px;
+                overflow: hidden;
+                background: var(--surface, #fff);
               "
-            />
+            >
+              <input
+                type="number"
+                id="input-time"
+                placeholder="30"
+                style="
+                  width: 100%;
+                  padding: 10px;
+                  border: none;
+                  outline: none;
+                  background: transparent;
+                  color: inherit;
+                "
+              />
+              <span
+                style="
+                  padding: 10px;
+                  background: rgba(128, 128, 128, 0.1);
+                  color: var(--text-muted);
+                  font-size: 13px;
+                  font-weight: bold;
+                "
+                >Menit</span
+              >
+            </div>
           </div>
           <div style="flex: 1">
             <label
@@ -473,17 +496,40 @@
               "
               >Jumlah Sajian</label
             >
-            <input
-              type="text"
-              id="input-servings"
-              placeholder="Misal: 4 Porsi"
+            <div
               style="
-                width: 100%;
-                padding: 10px;
-                border: 1px solid #ddd;
+                display: flex;
+                align-items: center;
+                border: 1px solid var(--border, #ddd);
                 border-radius: 8px;
+                overflow: hidden;
+                background: var(--surface, #fff);
               "
-            />
+            >
+              <input
+                type="number"
+                id="input-servings"
+                placeholder="4"
+                style="
+                  width: 100%;
+                  padding: 10px;
+                  border: none;
+                  outline: none;
+                  background: transparent;
+                  color: inherit;
+                "
+              />
+              <span
+                style="
+                  padding: 10px;
+                  background: rgba(128, 128, 128, 0.1);
+                  color: var(--text-muted);
+                  font-size: 13px;
+                  font-weight: bold;
+                "
+                >Porsi</span
+              >
+            </div>
           </div>
         </div>
 
