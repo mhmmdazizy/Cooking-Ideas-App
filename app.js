@@ -157,9 +157,11 @@ function renderGrid(containerId, data) {
       const authorName = item.authorName || "Admin";
       const favCount = item.favCount || 0;
       const docId = item.id || "undefined";
+      const time = item.time || "15 Menit";
+      const servings = item.servings || "2 Porsi";
 
       return `
-    <div class="card-item" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}')">
+    <div class="card-item menu-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}', '${time}', '${servings}')">
          
          <div class="fav-container">
              <button class="fav-btn ${isFav ? "active" : ""}" onclick="event.stopPropagation(); toggleFavorite('${docId}', '${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}', this)">
@@ -257,9 +259,11 @@ function renderMyRecipes() {
         .replace(/\n/g, "<br>")
         .replace(/\r/g, "");
       const authorName = item.authorName || "Saya";
+      const time = item.time || "15 Menit";
+      const servings = item.servings || "2 Porsi";
 
       return `
-        <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}')">
+        <div class="mini-card" onclick="openArticle('${item.title}', '${item.tag}', '${item.img}', '${safeDesc}', '${authorName}', '${time}', '${servings}')">
             
             <div class="action-btns">
                 <button class="edit-btn" onclick="event.stopPropagation(); openRecipeForm(${index})">
@@ -314,6 +318,8 @@ window.saveMyRecipe = async () => {
   const desc = document.getElementById("rec-desc").value;
   const fileInput = document.getElementById("rec-file");
   const editId = document.getElementById("edit-id").value; // Ambil ID jika ada
+  const time = document.getElementById("input-time").value || "15 Menit";
+  const servings = document.getElementById("input-servings").value || "2 Porsi";
 
   if (!title) return alert("Judul wajib diisi!");
 
@@ -342,6 +348,8 @@ window.saveMyRecipe = async () => {
       title: title,
       tag: tag,
       desc: desc,
+      time: time,
+      servings: servings,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     };
 
@@ -457,14 +465,24 @@ window.confirmReset = () => {
 
 // --- 7. MODALS & POPUPS ---
 // Tambahkan parameter 'author' di akhir (Default: "Admin")
-window.openArticle = (title, tag, img, desc = null, author = "Admin") => {
+window.openArticle = (
+  title,
+  tag,
+  img,
+  desc = null,
+  author = "Admin",
+  time = "15 Menit",
+  servings = "2 Porsi",
+) => {
   document.getElementById("detail-title").innerText = title;
   document.getElementById("detail-category").innerText = tag;
   document.getElementById("detail-image").style.backgroundImage =
     `url('${img}')`;
 
-  // Update Nama Penulis
+  // Update Meta Info Baru
   document.getElementById("detail-author").innerText = author;
+  document.getElementById("detail-time").innerText = time;
+  document.getElementById("detail-servings").innerText = servings;
 
   let contentHTML = desc
     ? `<p>${desc.replace(/\n/g, "<br>")}</p>`
@@ -473,6 +491,9 @@ window.openArticle = (title, tag, img, desc = null, author = "Admin") => {
 
   document.getElementById("article-view").classList.add("active");
   history.pushState({ modal: "article" }, null, "");
+
+  // Render ulang icon feather di dalam modal
+  if (typeof feather !== "undefined") feather.replace();
 };
 
 window.closeArticle = () => history.back();
