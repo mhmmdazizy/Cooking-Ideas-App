@@ -612,7 +612,7 @@ window.shareArticle = () => {
   const url = window.location.href; // Link website kamu
 
   // Teks pesan yang akan dikirim
-  const shareText = `Coba deh resep "${title}" ini! Cari resep praktis lainnya di aplikasi Masak Apa?`;
+  const shareText = `Coba deh resep "${title}" ini! Cari resep praktis lainnya di aplikasi Masakin?`;
 
   // Cek apakah HP/Browser mendukung fitur Share Native
   if (navigator.share) {

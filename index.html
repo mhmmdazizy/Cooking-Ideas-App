@@ -6,13 +6,19 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    
-    <title>Masak Apa?</title>
-    <meta property="og:title" content="Masak Apa? - Ide Resep Harian">
-    <meta property="og:description" content="Temukan resep masakan dari bahan yang ada di kulkasmu. Bagikan resep buatanmu sendiri!">
-    <meta property="og:image" content="https://cooking-ideas-app.vercel.app/icon.png">
-    <meta property="og:url" content="https://cooking-ideas-app.vercel.app//">
-    <meta property="og:type" content="website">
+
+    <title>Masakin</title>
+    <meta property="og:title" content="Masakin - Solusi Pintar Dapurmu" />
+    <meta
+      property="og:description"
+      content="Temukan resep masakan dari bahan yang ada di kulkasmu. Bagikan resep buatanmu sendiri!"
+    />
+    <meta
+      property="og:image"
+      content="https://cooking-ideas-app.vercel.app/icon.png"
+    />
+    <meta property="og:url" content="https://cooking-ideas-app.vercel.app//" />
+    <meta property="og:type" content="website" />
     <link rel="stylesheet" href="style.css" />
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#ffffff" />
@@ -31,7 +37,7 @@
       <div class="profile-pill" onclick="switchPage('profile-page')">
         <div class="avatar" id="header-avatar">G</div>
         <div class="profile-info">
-          <span class="app-name">Masak Apa?</span>
+          <span class="app-name">Masakin</span>
           <span class="user-name" id="header-username">Guest User</span>
         </div>
       </div>
@@ -56,7 +62,11 @@
           </button>
         </div>
 
-        <div id="recipe-results" class="recipe-list" style="display: none; font-size: 13px;">
+        <div
+          id="recipe-results"
+          class="recipe-list"
+          style="display: none; font-size: 13px"
+        >
           <div class="divider"></div>
           <h2>Hasil pencarian:</h2>
           <div id="results-container"></div>
@@ -64,46 +74,103 @@
       </section>
 
       <section id="explore" class="page">
-    <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div>
-            <h2 style="margin:0;">Jelajahi Tips</h2>
-            <p style="margin:0; font-size:12px; color:var(--text-muted);">Artikel & lifehack dapur terbaru.</p>
+        <div
+          class="section-title"
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+          "
+        >
+          <div>
+            <h2 style="margin: 0">Jelajahi Tips</h2>
+            <p style="margin: 0; font-size: 12px; color: var(--text-muted)">
+              Artikel & lifehack dapur terbaru.
+            </p>
+          </div>
+          <div class="search-box">
+            <i
+              data-feather="search"
+              style="width: 16px; height: 16px; color: var(--text-muted)"
+            ></i>
+            <input
+              type="text"
+              id="explore-search"
+              onkeyup="searchGrid('explore-search', 'explore-container')"
+              placeholder="Cari artikel..."
+            />
+          </div>
         </div>
-        <div class="search-box">
-            <i data-feather="search" style="width:16px; height:16px; color:var(--text-muted);"></i>
-            <input type="text" id="explore-search" onkeyup="searchGrid('explore-search', 'explore-container')" placeholder="Cari artikel...">
-        </div>
-    </div>
-    <div class="masonry-grid" id="explore-container"></div>
-</section>
+        <div class="masonry-grid" id="explore-container"></div>
+      </section>
 
-<section id="menu-page" class="page">
-    <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div>
-            <h2 style="margin:0;">Inspirasi Menu</h2>
-            <p style="margin:0; font-size:12px; color:var(--text-muted);">Daftar masakan minggu ini.</p>
+      <section id="menu-page" class="page">
+        <div
+          class="section-title"
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+          "
+        >
+          <div>
+            <h2 style="margin: 0">Inspirasi Menu</h2>
+            <p style="margin: 0; font-size: 12px; color: var(--text-muted)">
+              Daftar masakan minggu ini.
+            </p>
+          </div>
+          <div class="search-box">
+            <i
+              data-feather="search"
+              style="width: 16px; height: 16px; color: var(--text-muted)"
+            ></i>
+            <input
+              type="text"
+              id="menu-search"
+              onkeyup="searchGrid('menu-search', 'menu-container')"
+              placeholder="Cari resep..."
+            />
+          </div>
         </div>
-        <div class="search-box">
-            <i data-feather="search" style="width:16px; height:16px; color:var(--text-muted);"></i>
-            <input type="text" id="menu-search" onkeyup="searchGrid('menu-search', 'menu-container')" placeholder="Cari resep...">
-        </div>
-    </div>
-    <div class="masonry-grid" id="menu-container"></div>
-</section>
+        <div class="masonry-grid" id="menu-container"></div>
+      </section>
 
-<section id="favorit" class="page">
-    <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div>
-            <h2 style="margin:0;">Favoritku</h2>
-            <p style="margin:0; font-size:12px; color:var(--text-muted);">Resep yang kamu simpan.</p>
+      <section id="favorit" class="page">
+        <div
+          class="section-title"
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+          "
+        >
+          <div>
+            <h2 style="margin: 0">Favoritku</h2>
+            <p style="margin: 0; font-size: 12px; color: var(--text-muted)">
+              Resep yang kamu simpan.
+            </p>
+          </div>
+          <div class="search-box">
+            <i
+              data-feather="search"
+              style="width: 16px; height: 16px; color: var(--text-muted)"
+            ></i>
+            <input
+              type="text"
+              id="favorit-search"
+              onkeyup="searchGrid('favorit-search', 'favorit-container')"
+              placeholder="Cari favorit..."
+            />
+          </div>
         </div>
-        <div class="search-box">
-            <i data-feather="search" style="width:16px; height:16px; color:var(--text-muted);"></i>
-            <input type="text" id="favorit-search" onkeyup="searchGrid('favorit-search', 'favorit-container')" placeholder="Cari favorit...">
-        </div>
-    </div>
-    <div class="masonry-grid" id="favorit-container"></div>
-</section>
+        <div class="masonry-grid" id="favorit-container"></div>
+      </section>
 
       <section id="profile-page" class="page profile-container">
         <div style="padding: 0 5px 15px">
@@ -224,15 +291,31 @@
     </main>
 
     <div id="notif-sheet" class="bottom-sheet">
-    <div class="sheet-handle"></div>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h3 style="margin:0;">Notifikasi</h3>
+      <div class="sheet-handle"></div>
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 15px;
+        "
+      >
+        <h3 style="margin: 0">Notifikasi</h3>
+      </div>
+
+      <div class="notif-list" id="notif-list-container">
+        <p
+          style="
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+            margin-top: 20px;
+          "
+        >
+          Memuat notifikasi...
+        </p>
+      </div>
     </div>
-    
-    <div class="notif-list" id="notif-list-container">
-        <p style="text-align:center; color:#888; font-size:12px; margin-top:20px;">Memuat notifikasi...</p>
-    </div>
-</div>
     <div
       id="sheet-backdrop"
       class="backdrop"
@@ -293,12 +376,15 @@
       <div class="detail-body">
         <h1 id="detail-title">Judul Artikel</h1>
         <div class="detail-meta">
-    <span><i data-feather="clock" style="width:14px;"></i> 5 min read</span>
-    
-    <span>
-        <i data-feather="user" style="width:14px;"></i> 
-        <span id="detail-author">Admin</span> </span>
-</div>
+          <span
+            ><i data-feather="clock" style="width: 14px"></i> 5 min read</span
+          >
+
+          <span>
+            <i data-feather="user" style="width: 14px"></i>
+            <span id="detail-author">Admin</span>
+          </span>
+        </div>
 
         <div class="detail-content" id="detail-desc"></div>
       </div>
@@ -355,12 +441,3 @@
     <script src="app.js"></script>
   </body>
 </html>
-
-
-
-
-
-
-
-
-
