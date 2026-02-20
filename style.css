@@ -910,3 +910,11 @@ header {
   transform: scale(1.15); /* Membesar sedikit lebih mantap */
   transition: transform 0.2s ease;
 }
+
+/* --- PROTEKSI TOMBOL INSTALL PWA --- */
+/* Jika dibuka sebagai aplikasi (standalone), paksa tombol unduh hilang selamanya */
+@media all and (display-mode: standalone) {
+  #install-btn {
+    display: none !important;
+  }
+}
