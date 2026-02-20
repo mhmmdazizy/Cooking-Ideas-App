@@ -74,7 +74,8 @@ document.addEventListener("DOMContentLoaded", () => {
     db.collection("counters").onSnapshot((snapshot) => {
       const globalCounts = {};
       snapshot.forEach((doc) => {
-        globalCounts[doc.id] = doc.data().favCount || 0;
+        // GANTI BARIS INI: Gunakan Math.max agar nilai terendah selalu 0
+        globalCounts[doc.id] = Math.max(0, doc.data().favCount || 0);
       });
 
       // Fungsi penyemat angka terbaru ke semua data
@@ -199,6 +200,20 @@ window.toggleFavorite = (id, title, tag, img, desc, authorName, btn) => {
       .catch(console.error);
   } else {
     // JIKA DI-UNFAVORITKAN
+
+    // HANYA kurangi di Firebase JIKA angka saat ini lebih dari 0
+    if (currentCount > 0) {
+      db.collection("counters")
+        .doc(safeTitleId)
+        .set(
+          {
+            favCount: firebase.firestore.FieldValue.increment(-1),
+          },
+          { merge: true },
+        )
+        .catch(console.error);
+    }
+
     currentCount = Math.max(0, currentCount - 1);
     favorites.splice(idx, 1);
     btn.classList.remove("active");
