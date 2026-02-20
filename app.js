@@ -14,6 +14,29 @@ if ("serviceWorker" in navigator) {
 }
 // ------------------------------------------------
 // -------------------------------
+// --- 1. CONFIG FIREBASE (PASTE CONFIG KAMU DI SINI) ---
+const firebaseConfig = {
+  apiKey: "AIzaSyBIM86KidwhWLIdQkVv38xfNJUK3pmKmc8",
+  authDomain: "cookingideas-2a894.firebaseapp.com",
+  projectId: "cookingideas-2a894",
+  storageBucket: "cookingideas-2a894.firebasestorage.app",
+  messagingSenderId: "376881959519",
+  appId: "1:376881959519:web:46f75e2c840654b1ba01ea",
+};
+
+// Init Firebase & Firestore
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
+const db = firebase.firestore(); // Database Gratis
+// === TAMBAHKAN BLOK KODE INI BIAR FIREBASE KEBAL OFFLINE ===
+db.enablePersistence().catch((err) => {
+  if (err.code == "failed-precondition") {
+    console.log("Memori offline gagal: Buka di banyak tab sekaligus.");
+  } else if (err.code == "unimplemented") {
+    console.log("Browser ini tidak mendukung memori offline Firebase.");
+  }
+});
 
 // Variables
 let selectedIngredients = new Set();
@@ -888,7 +911,7 @@ const installBtn = document.getElementById("install-btn");
 // 1. Browser mendeteksi web bisa diinstall & belum terinstall
 window.addEventListener("beforeinstallprompt", (e) => {
   // Cegah browser memunculkan popup install bawaan yang tiba-tiba
-  // e.preventDefault();
+  e.preventDefault();
   // Simpan event-nya untuk dipanggil saat tombol diklik
   deferredPrompt = e;
 
@@ -958,24 +981,3 @@ window.addEventListener("appinstalled", () => {
   // Munculkan toast saat berhasil diinstall!
   showToast("Aplikasi berhasil diinstall! 🎉");
 });
-// --- 1. CONFIG FIREBASE (PASTE CONFIG KAMU DI SINI) ---
-try {
-  const firebaseConfig = {
-    apiKey: "AIzaSyBIM86KidwhWLIdQkVv38xfNJUK3pmKmc8",
-    authDomain: "cookingideas-2a894.firebaseapp.com",
-    projectId: "cookingideas-2a894",
-    storageBucket: "cookingideas-2a894.firebasestorage.app",
-    messagingSenderId: "376881959519",
-    appId: "1:376881959519:web:46f75e2c840654b1ba01ea",
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  db.enablePersistence().catch(console.error); // Mode memori offline
-  const auth = firebase.auth();
-  const provider = new firebase.auth.GoogleAuthProvider();
-} catch (error) {
-  console.log(
-    "Aplikasi dalam mode Offline murni. Firebase dihentikan sementara.",
-  );
-}
